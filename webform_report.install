@@ -1,0 +1,46 @@
+<?php
+/* $Id$ */
+
+function webform_report_install() {
+  drupal_set_message('Installing webform');
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysqli':
+    case 'mysql':
+      db_query("CREATE TABLE if not exists {webform_report} (
+        nid int(10) unsigned NOT NULL default '0',
+        wnid int(10) unsigned NOT NULL default '0',
+        cid int(10) unsigned NOT NULL default '0',
+        kcid int(10) unsigned NOT NULL default '0',
+        description text default NULL,
+        sort int(2) NOT NULL default '4',
+        PRIMARY KEY  (nid,cid)
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      break;
+
+    case 'pgsql':
+      db_query("CREATE TABLE {webform_report} (
+        nid integer NOT NULL default '0',
+        wnid integer NOT NULL default '0',
+        cid integer NOT NULL default '0',
+        kcid integer NOT NULL default '0',
+        description text,
+        sort smallint NOT NULL default '4',
+        PRIMARY KEY  (nid,cid)
+        )"
+      );
+      break;
+  }
+  
+  variable_set('webform_report_version',array('text'=>'4.7.1', 'build' => '471'));
+
+  $success = TRUE;
+
+  if ($success) {
+    drupal_set_message(t('Webform report module installed module tables successfully.'));
+  }
+  else {
+    drupal_set_message(t('The installation of webform report module was unsuccessful.'), 'error');
+  }
+}
