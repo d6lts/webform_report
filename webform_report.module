@@ -466,6 +466,28 @@ function _webform_report_get_body_content($data, $node) {
       $last_value = $row->data;
     }
 
+    reset($fields); // top
+
+    // make the key column the first one in the table if not already so
+    if (isset($node->kcid) && key($fields) != $node->kcid) {
+
+      // put the key column first
+      $tmpField = $fields[key($fields)];
+      $fields[key($fields)] = $fields[$node->kcid];
+      $fields[$node->kcid] = $tmpField;
+      unset($tmpField);
+
+      // put the values of the key column first
+      foreach ($values as $key => $value) {
+        $tmpValue = $values[$key][key($fields)];
+        $values[$key][key($fields)] = $values[$key][$node->kcid];
+        $values[$key][$node->kcid] = $tmpValue;
+      }
+      unset($tmpValue);
+
+      $node->kcid = key($fields); // make the new column the key column
+    }
+
     // get an a array of columns for sorting
     $column = array();
     foreach ($fields as $key1 => $field) {
