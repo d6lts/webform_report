@@ -20,10 +20,10 @@ function webform_report_help($section='') {
 
   switch ($section) {
     case "admin/modules#description":
-      $output = t("Allows users to create reports from webform data. <b>Requires webform module</b>, and accents module (optional) for sorting accented characters.");
+      $output = t("Allows users to create reports from Webform data. <b>Requires webform module</b>, and accents module (optional) for sorting accented characters.");
       break;
     case 'node/add#webform_report' :
-      $output= t("A webform report is a dynamic page that contains webform data. The data can be sorted by a particular field, and fields can be included/excluded from the report as needed.");
+      $output= t("A Webform report is a dynamic page that contains Webform data. The data can be sorted by a particular field, and fields can be included/excluded from the report as needed.");
       break;
   }
 
@@ -65,15 +65,15 @@ function webform_report_access($op, $node) {
 function webform_report_menu($may_cache) {
   $items = array();
   if ($may_cache) {
-    $items[] = array('path' => 'node/add/webform_report', 'title' => t('webform report'),
+    $items[] = array('path' => 'node/add/webform_report', 'title' => t('Webform report'),
       'access' => user_access('create webform reports'));
     
     // Webform reports listing 
     $items[] = array('path' => 'admin/content/webform_report',
-      'title' => t('Webform Reports'),
+      'title' => t('Webform reports'),
       'callback' => '_webform_report_page',
       'access' => user_access('access webform reports'),
-      'description' => t('View and edit Webform Reports.'),      
+      'description' => t('View and edit Webform reports.'),      
       'type' => MENU_NORMAL_ITEM);
   }
   return $items;
@@ -85,7 +85,7 @@ function webform_report_menu($may_cache) {
 function webform_report_node_info() {
   return array(
     'webform_report' => array(
-      'name' => t('webform report'),
+      'name' => t('Webform report'),
       'module' => 'webform_report',
       'description' => t('A webform report is a dynamic page that contains user-specified data
       collected by the Webform module. The data can be sorted by a particular field, and fields can
@@ -218,7 +218,7 @@ function webform_report_insert($node, $log = TRUE) {
     } 
   }
   if ($log) {
-    watchdog('webform_report', 'webform report "'.$node->title.'" added', WATCHDOG_NOTICE);
+    watchdog('webform_report', 'Webform report "'.$node->title.'" added', WATCHDOG_NOTICE);
   }
 }
 
@@ -229,7 +229,7 @@ function webform_report_update($node, $log = TRUE) {
   webform_report_delete($node, FALSE);
   webform_report_insert($node, FALSE);
   if ($log) {
-    watchdog('webform_report', 'webform report "'.$node->title.'" updated', WATCHDOG_NOTICE);
+    watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE);
   }
 }
 
@@ -239,7 +239,7 @@ function webform_report_update($node, $log = TRUE) {
 function webform_report_delete($node, $log = TRUE) {
   db_query ("DELETE FROM {webform_report} WHERE nid = '$node->nid'");
   if ($log) {
-    watchdog('webform_report', 'webform report "'.$node->title.'" deleted', WATCHDOG_NOTICE);
+    watchdog('webform_report', 'Webform report "'.$node->title.'" deleted', WATCHDOG_NOTICE);
   }
 }
 
@@ -249,7 +249,7 @@ function webform_report_delete($node, $log = TRUE) {
 function webform_report_form(&$node) {
   $form['webform_report'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Webform Report'),
+    '#title' => t('Webform report'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#weight' => -3);
@@ -259,7 +259,7 @@ function webform_report_form(&$node) {
     '#required' => TRUE,
     '#default_value' => t($node->title),
     '#weight' => -2,
-    '#description' => t('Enter a title for your webform report page')
+    '#description' => t('Enter a title for your Webform report page')
   );
 
   if($_POST['description']) {
