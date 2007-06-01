@@ -439,11 +439,15 @@ function _webform_report_get_body_content($data, $node) {
       if (!isset($fields[$row->cid])) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       }
-      if ($row->data != '0') { // checkbox not selected
-        if ($last_value != '0') { // checkbox not selected
-          $values[$row->sid][$row->cid] .= ", ";
+      if ($row->data != '0') { // checkbox, not selected
+        if($row->cid != $last_cid) { // will comma-separate multiple selections
+          $values[$row->sid][$row->cid] = $row->data;
+        } else {
+          if ($last_value != '0') {
+            $values[$row->sid][$row->cid] .= ", ";
+          }
+          $values[$row->sid][$row->cid] .= $row->data;
         }
-        $values[$row->sid][$row->cid] = array('data' => $row->data, 'style' => $base_style);
       }
       // override the report's key field with the table sort column, if applicable
       if (isset($_GET['order'])) {
