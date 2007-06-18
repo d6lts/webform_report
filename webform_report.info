@@ -2,4 +2,3 @@
 name = "Webform Report"
 description = "Allows users to create reports from webform data. Will use accents module, if present, to correctly sort accented characters."
 dependencies = webform
-version = "5.x-1.x-dev"
