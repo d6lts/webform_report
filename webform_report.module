@@ -50,6 +50,11 @@ function webform_report_access($op, $node) {
   global $user;
 
   switch ($op) {
+    case "view":
+      // don't allow module to override permissions that restrict viewing of webform results
+      if(user_access("access webform results") && user_access("access webform reports")) {
+        return TRUE;
+      }
     case "create":
       return user_access("create webform reports");
       break;
@@ -167,20 +172,15 @@ function webform_report_prepare(&$node) {
  * Implementation of hook_view
  */
 function webform_report_view(&$node, $teaser = 0, $page = 0) {
+  $output = "";
+
   if (arg(0) == "comment" || $teaser) {
     // Do not render the form for comments or on teasers
     return;
   }
 
   webform_report_prepare($node); // load form data to the node object
-  
-  $output = "";
-  if (!user_access('access webform reports')) {
-    drupal_access_denied();
-    return FALSE;
-  } else {
-    $output = _webform_report_get_body_content(_webform_report_get_data($node->kcid, $node->components), $node);
-  }
+  $output = _webform_report_get_body_content(_webform_report_get_data($node->kcid, $node->components), $node);
   $node->body = check_markup($node->body, $node->format, FALSE);
   $node->body .= "<p>" . $node->description . "</p>";
   $node->body .= $output;
@@ -446,15 +446,11 @@ function _webform_report_get_body_content($data, $node) {
       if (!isset($fields[$row->cid])) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       }
-      if ($row->data != '0') { // this is a checkbox, not selected
-        if($row->cid != $last_cid) { // will comma-separate multiple selections
-          $values[$row->sid][$row->cid] = $row->data;
-        } else {
-          if ($last_value != '0') {
-            $values[$row->sid][$row->cid] .= ", ";
-          }
-          $values[$row->sid][$row->cid] .= $row->data;
+      if ($row->data != '0') { // checkbox not selected
+        if ($last_value != '0') { // checkbox not selected
+          $values[$row->sid][$row->cid] .= ", ";
         }
+        $values[$row->sid][$row->cid] = array('data' => $row->data, 'style' => $base_style);
       }
       // override the report's key field with the table sort column, if applicable
       if (isset($_GET['order'])) {
