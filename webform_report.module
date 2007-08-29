@@ -1,4 +1,4 @@
-<?php
+  <?php
 /* $Id$ */
 
 /**
@@ -46,6 +46,11 @@ function webform_report_access($op, $node) {
   global $user;
 
   switch ($op) {
+    case "view":
+      // don't allow module to override permissions that restrict viewing of webform results
+      if(user_access("access webform results") && user_access("access webform reports")) {
+        return TRUE;
+      }
     case "create":
       return user_access("create webform reports");
       break;
@@ -167,12 +172,7 @@ function webform_report_view($node, $teaser = 0, $page = 0) {
   webform_report_prepare($node); // load form data to the node object
   
   $output = "<p>" . $node->description . "</p>";
-  if (!user_access('access webform reports')) {
-    drupal_access_denied();
-    return FALSE;
-  } else {
-    $output .= _webform_report_get_body_content(_webform_report_get_data($node->kcid, $node->components), $node);
-  }
+  $output .= _webform_report_get_body_content(_webform_report_get_data($node->kcid, $node->components), $node);
   $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
   $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
   return $node;
