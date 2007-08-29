@@ -70,9 +70,6 @@ function webform_report_access($op, $node) {
 function webform_report_menu($may_cache) {
   $items = array();
   if ($may_cache) {
-    $items[] = array('path' => 'node/add/webform_report', 'title' => t('Webform report'),
-      'access' => user_access('create webform reports'));
-    
     // Webform reports listing 
     $items[] = array('path' => 'admin/content/webform_report',
       'title' => t('Webform reports'),
