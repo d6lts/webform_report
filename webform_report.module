@@ -1,4 +1,4 @@
-  <?php
+<?php
 /* $Id$ */
 
 /**
@@ -449,6 +449,7 @@ function _webform_report_get_body_content($data, $node) {
           $values[$row->sid][$row->cid] .= $row->data;
         }
       }
+
       // override the report's key field with the table sort column, if applicable
       if (isset($_GET['order'])) {
         if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
