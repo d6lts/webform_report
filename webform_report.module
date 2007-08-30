@@ -520,7 +520,10 @@ function _webform_report_get_body_content($data, $node) {
     // sort the columns and their contents according to specified criteria
     array_multisort($column[$node->kcid], (int)$node->sort_order, $values);        
 
-    $output = theme_table($fields, $values);
+    // break the array into chunks for pagination 
+    $pages = array_chunk($values, 20, TRUE); 
+    
+    $output .= _webform_report_pager($fields, $pages);
   }
   else { // no submitted data
     $output = t("Note: There are no submissions for the selected webform.</b> Either the form
@@ -555,5 +558,45 @@ function _webform_report_page() {
     $output = theme('table', $header, $rows);
     drupal_set_title($node->title);
   }
+  return $output;
+}
+
+/**
+ * Paginate the webform report
+ * @return a themed table with page links
+ */
+function _webform_report_pager($fields, $pages) {
+  if(!$_GET['page']) {
+    $_GET['page'] = '1';
+  }
+  $output = theme_table($fields, $pages[($_GET['page'] - 1)]);
+  $output .= '<div class="pager">';
+  if($_GET['page'] > 1) {
+    $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?page=1">' . t('« first') .'</a>';
+    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
+  }
+  $output .= '<span class="pager-list">';
+  foreach($pages as $key => $page) {
+    switch($_GET['page']) {
+      case($key + 1):
+        $output .= '<strong class="pager-current">' . ($key + 1) . '</strong>';
+        break;
+      case(1):
+        $output .= '<a class="pager-first active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        break;
+      case(count($pages)):
+        $output .= '<a class="pager-last active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        break;
+      default:
+        $output .= '<a class="pager-next active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        break;
+    }
+  }
+  $output .= '</span>';
+  if($_GET['page'] < count($pages)) {
+    $output .= '<a class="pager-last active" title="' . t('Go to next page') . '" href="?page=' . ($_GET['page'] + 1) . '">' . t('next ›') .'</a>';
+    $output .= '<a class="pager-last active" title="' . t('Go to last page') . '" href="?page=' . count($pages) . '">' . t('last »') .'</a>';
+  }
+  $output .= '</div>';
   return $output;
 }
