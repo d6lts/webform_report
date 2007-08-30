@@ -578,7 +578,7 @@ function _webform_report_pager($fields, $pages) {
   $output .= '<div id="pager">';
   if($_GET['page'] > 1) {
     $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?page=1">' . t('« first') .'</a>';
-    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?page=' . ($_GET['page'] - 1) . '">' . t('« previous') .'</a>';
+    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
   }
   $output .= '<span class="pager-list">';
   foreach($pages as $key => $page) {
