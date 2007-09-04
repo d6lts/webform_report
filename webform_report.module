@@ -180,7 +180,7 @@ function webform_report_view(&$node, $teaser = 0, $page = 0) {
   }
 
   webform_report_prepare($node); // load form data to the node object
-  $output = _webform_report_get_body_content(_webform_report_get_data($node->kcid, $node->components), $node);
+  $output = _webform_report_get_body_content(_webform_report_get_data($node), $node);
   $node->body = check_markup($node->body, $node->format, FALSE);
   $node->body .= "<p>" . $node->description . "</p>";
   $node->body .= $output;
@@ -404,15 +404,15 @@ function _webform_report_get_components($nid, $default = NULL) {
  * @param components is an array of fields to include in the report
  * @return a database query result set
  */
-function _webform_report_get_data($kcid, $components) {
+function _webform_report_get_data($node) {
   $result = NULL;
-  if (is_array($components) and count($components) > 0) {  
+  if (is_array($node->components) and count($node->components) > 0) {  
     // build a subquery for the specified components
     $query = "c.cid = '";
     $count = 0;
-    foreach ($components as $component) {
+    foreach ($node->components as $component) {
       $query .= $component;
-      if ($count < count($components) - 1) {
+      if ($count < count($node->components) - 1) {
         $query .= "' OR c.cid = '";
       }
       $count++;
@@ -525,10 +525,7 @@ function _webform_report_get_body_content($data, $node) {
     // sort the columns and their contents according to specified criteria
     array_multisort($column[$node->kcid], (int)$node->sort_order, $values);        
     
-    // break the array into chunks for pagination 
-    $pages = array_chunk($values, 20, TRUE); 
-    
-    $output .= _webform_report_pager($fields, $pages);
+    $output .= _webform_report_pager($fields, $values);
   }
   else { // no submitted data
     $output = t("Note: There are no submissions for the selected webform.</b> Either the form
@@ -570,7 +567,10 @@ function _webform_report_page() {
  * Paginate the webform report
  * @return a themed table with page links
  */
-function _webform_report_pager($fields, $pages) {
+function _webform_report_pager($fields, $values) {
+  // break the array into chunks for pagination 
+  $pages = array_chunk($values, 20, TRUE); 
+
   if(!$_GET['page']) {
     $_GET['page'] = '1';
   }
