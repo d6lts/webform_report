@@ -373,7 +373,7 @@ function _webform_report_get_components($nid, $default = NULL) {
     $components = array();
   }
   
-  $result = db_query("SELECT c.cid, c.name, c.type FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = '$nid' ORDER BY c.cid");
+  $result = db_query("SELECT c.cid, c.name FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = '$nid' ORDER BY c.weight");
   
   while ($row = db_fetch_object($result)) {
     $component_name = substr($row->name, 0, 65);
