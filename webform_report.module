@@ -69,6 +69,31 @@ function webform_report_access($op, $node) {
 }
 
 /**
+* Implementation of hook_db_rewrite_sql().
+*/
+function webform_report_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
+  switch ($primary_field) {
+    case 'nid':
+      // this query deals with node objects
+      $return = array();
+      if (!user_access('access webform reports')) {
+        if ($primary_table != 'n') {
+          $return['join'] = "LEFT JOIN {node} n ON $primary_table.nid = n.nid";
+        }
+        $return['where'] = "n.type <> 'webform_report'";
+        return $return;
+      }
+      break;
+    case 'tid':
+      // this query deals with taxonomy objects
+      break;
+    case 'vid':
+      // this query deals with vocabulary objects
+      break;
+  }
+}
+
+/**
  * Implementation of hook_init()
  */
 function webform_report_init($log = TRUE) {
