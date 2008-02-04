@@ -10,11 +10,16 @@ function webform_report_install() {
       db_query("CREATE TABLE if not exists {webform_report} (
         nid int(10) unsigned NOT NULL default '0',
         wnid int(10) unsigned NOT NULL default '0',
-        cid int(10) unsigned NOT NULL default '0',
         kcid int(10) unsigned NOT NULL default '0',
         description text default NULL,
         sort int(2) NOT NULL default '4',
-        PRIMARY KEY  (nid,cid)
+        PRIMARY KEY  (nid)
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      db_query("CREATE TABLE if not exists {webform_report_component} (
+        nid int(10) unsigned NOT NULL default '0',
+        cid int(10) unsigned NOT NULL default '0',
+        PRIMARY KEY  (nid, cid)
         ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
       );
       break;
@@ -27,6 +32,12 @@ function webform_report_install() {
         kcid integer NOT NULL default '0',
         description text,
         sort smallint NOT NULL default '4',
+        PRIMARY KEY  (nid)
+        )"
+      );
+      db_query("CREATE TABLE {webform_report_component} (
+        nid integer NOT NULL default '0',
+        cid integer NOT NULL default '0',
         PRIMARY KEY  (nid,cid)
         )"
       );
@@ -43,4 +54,43 @@ function webform_report_install() {
   else {
     drupal_set_message(t('The installation of webform report module was unsuccessful.'), 'error');
   }
+}
+
+/**
+ * Drupal 5 updates
+ */
+// New table structure to eliminate redundancy
+function webform_report_update_4(){
+  $items[] = update_sql("SELECT * INTO {webform_report_temp} FROM {webform_report}");
+  $items[] = update_sql("DROP TABLE {webform_report}");
+  $items[] = update_sql("SELECT DISTINCT nid, wnid, kcid, description, sort INTO {webform_report} FROM {webform_report_temp}");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD PRIMARY KEY (nid)");
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $items[] = update_sql("CREATE TABLE if not exists {webform_report_component} (
+        nid int(10) unsigned NOT NULL default '0',
+        cid int(10) unsigned NOT NULL default '0',
+        PRIMARY KEY  (nid, cid)
+        ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
+      );
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page SMALLINT(6) DEFAULT '25' NOT NULL");
+      break;
+    case 'pgsql':
+      $items[] = update_sql("CREATE TABLE {webform_report_component} (
+        nid integer NOT NULL default '0',
+        cid integer NOT NULL default '0',
+        PRIMARY KEY  (nid,cid)
+        )"
+      );
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page SMALLINT");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET DEFAULT '25'");
+      $items[] = update_sql("UPDATE {webform_report} SET results_per_page = '25'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET NOT NULL");
+      break;
+  }
+  $items[] = update_sql("INSERT INTO {webform_report_component} (nid, cid) (SELECT nid, cid FROM {webform_report_temp})");
+  $items[] = update_sql("DROP TABLE {webform_report_temp}");
+
+  return $items;
 }
