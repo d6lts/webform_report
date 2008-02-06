@@ -537,7 +537,7 @@ function _webform_report_get_data($node) {
     }
     $query .= "'";
 
-    $result = db_query("SELECT c.name, c.cid, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
+    $result = db_query("SELECT c.name, c.cid, c.type, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
   }
   return $result;  
 }
@@ -570,7 +570,11 @@ function _webform_report_get_body_content($data, $node) {
         if($node->options['show_ip']) {
           $fields['show_ip'] = array('data' => t('IP Address'), 'field' => $row->remote_addr, 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
-        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        if($row->type == "email") {
+          $fields[$row->cid] = array('data' => '<a href="mailto:' . $row->name . '">' . $row->name . '</a>', 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        } else {
+          $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
       }
       if ($row->data != '0') { // checkbox, not selected
         if($row->cid == $last_cid) { // will comma-separate multiple selections
@@ -585,7 +589,11 @@ function _webform_report_get_body_content($data, $node) {
         if($node->options['show_ip']) {
           $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
         }
-        $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
+        if($row->type == "email") {
+          $values[$row->sid][$row->cid] = array('data' => '<a href="mailto:' . $row->data . '">' . $row->data . '</a>', 'class' => 'webform_report');
+        } else {
+          $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
+        }
       }
 
       // override the report's key field with the table sort column, if applicable
