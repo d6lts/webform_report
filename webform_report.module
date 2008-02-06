@@ -565,13 +565,13 @@ function _webform_report_get_body_content($data, $node) {
           $fields['submitted'] = array('data' => t('Submitted'), 'field' => date('Y-m-d', $row->submitted), 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         if($node->options['show_user']) {
-          $fields['user'] = array('data' => t('User'), 'field' => '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+          $fields['user'] = array('data' => t('User'), 'field' => $row->user, 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         if($node->options['show_ip']) {
           $fields['show_ip'] = array('data' => t('IP Address'), 'field' => $row->remote_addr, 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         if($row->type == "email") {
-          $fields[$row->cid] = array('data' => '<a href="mailto:' . $row->name . '">' . $row->name . '</a>', 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+          $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
         } else {
           $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
@@ -611,28 +611,6 @@ function _webform_report_get_body_content($data, $node) {
     }
 
     reset($fields); // top
-
-    // make the key column the first one in the table if not already so
-    /*
-    if (isset($node->kcid) && key($fields) != $node->kcid) {
-
-      // put the key column first
-      $tmpField = $fields[key($fields)];
-      $fields[key($fields)] = $fields[$node->kcid];
-      $fields[$node->kcid] = $tmpField;
-      unset($tmpField);
-
-      // put the values of the key column first
-      foreach ($values as $key => $value) {
-        $tmpValue = $values[$key][key($fields)];
-        $values[$key][key($fields)] = $values[$key][$node->kcid];
-        $values[$key][$node->kcid] = $tmpValue;
-      }
-      unset($tmpValue);
-
-      $node->kcid = key($fields); // make the new column the key column
-    }
-    */
 
     // get an array of columns for sorting
     $column = array();
