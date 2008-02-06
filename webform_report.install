@@ -60,7 +60,7 @@ function webform_report_install() {
  * Drupal 5 updates
  */
 // New table structure to eliminate redundancy
-function webform_report_update_4(){
+function webform_report_update_1(){
   $items[] = update_sql("SELECT * INTO {webform_report_temp} FROM {webform_report}");
   $items[] = update_sql("DROP TABLE {webform_report}");
   $items[] = update_sql("SELECT DISTINCT nid, wnid, kcid, description, sort INTO {webform_report} FROM {webform_report_temp}");
@@ -75,6 +75,9 @@ function webform_report_update_4(){
         ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
       );
       $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page SMALLINT(6) DEFAULT '25' NOT NULL");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_submitted TINYINT(1) DEFAULT '0' NOT NULL");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_user TINYINT(1) DEFAULT '0' NOT NULL");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_ip TINYINT(1) DEFAULT '0' NOT NULL");
       break;
     case 'pgsql':
       $items[] = update_sql("CREATE TABLE {webform_report_component} (
@@ -87,6 +90,21 @@ function webform_report_update_4(){
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET DEFAULT '25'");
       $items[] = update_sql("UPDATE {webform_report} SET results_per_page = '25'");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET NOT NULL");
+
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_submitted SMALLINT");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_submitted SET DEFAULT '0'");
+      $items[] = update_sql("UPDATE {webform_report} SET show_submitted = '0'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_submitted SET NOT NULL");
+
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_user SMALLINT");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_user SET DEFAULT '0'");
+      $items[] = update_sql("UPDATE {webform_report} SET show_user = '0'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_user SET NOT NULL");
+
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD show_ip SMALLINT");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_ip SET DEFAULT '0'");
+      $items[] = update_sql("UPDATE {webform_report} SET show_ip = '0'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN show_ip SET NOT NULL");
       break;
   }
   $items[] = update_sql("INSERT INTO {webform_report_component} (nid, cid) (SELECT nid, cid FROM {webform_report_temp})");

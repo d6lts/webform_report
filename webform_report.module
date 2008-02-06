@@ -131,6 +131,7 @@ function webform_report_load($node) {
 
     if (db_num_rows($result) > 0) {
       while ($row = db_fetch_object($result)) {
+        // check if variables are already set so we don't set them twice
         if (!isset($webform_report->wnid)) {
           $webform_report->wnid = $row->wnid;
         }
@@ -149,9 +150,19 @@ function webform_report_load($node) {
         if (!isset($webform_report->description)) {
           $webform_report->description = $row->description;
         }
+        // this array will be appended multiple times, so no pre-existence check
         $webform_report->components[] = $row->cid;
         if (!isset($webform_report->results_per_page)) {
           $webform_report->results_per_page = $row->results_per_page;
+        }
+        if (!isset($webform_report->show_submitted)) {
+          $webform_report->show_submitted = $row->show_submitted;
+        }
+        if (!isset($webform_report->show_user)) {
+          $webform_report->show_user = $row->show_user;
+        }
+        if (!isset($webform_report->show_ip {
+          $webform_report->show_ip $row->show_ip;
         }
       }
     }
@@ -168,6 +179,9 @@ function webform_report_load($node) {
     $webform_report->description = $_POST['description'];
     $webform_report->components = $_POST['components'];
     $webform_report->results_per_page = $_POST['results_per_page'];
+    $webform_report->show_submitted = $_POST['show_submitted'];
+    $webform_report->show_user = $_POST['show_user'];
+    $webform_report->show_ip = $_POST['show_ip'];
   }
 
   return $webform_report;
@@ -200,6 +214,15 @@ function webform_report_prepare(&$node) {
   }
   if (!isset($node->results_per_page)) {
     $node->results_per_page = $_POST['results_per_page'];
+  }
+  if (!isset($node->show_submitted)) {
+    $node->results_per_page = $_POST['show_submitted'];
+  }
+  if (!isset($node->show_user)) {
+    $node->results_per_page = $_POST['show_user'];
+  }
+  if (!isset($node->show_ip)) {
+    $node->results_per_page = $_POST['show_ip'];
   }
 }
 
@@ -259,7 +282,7 @@ function webform_report_validate(&$node) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, results_per_page) VALUES ('$node->nid', '$node->wnid', '$node->kcid', '".addslashes($node->description)."', '$node->sort_order', '$node->results_per_page')");
+  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, results_per_page, show_submitted, show_user, show_ip) VALUES ('$node->nid', '$node->wnid', '$node->kcid', '".addslashes($node->description)."', '$node->sort_order', '$node->results_per_page', '$node->show_submitted', '$node->show_user', '$node->show_ip')");
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
@@ -513,7 +536,7 @@ function _webform_report_get_data($node) {
     }
     $query .= "'";
 
-    $result = db_query("SELECT c.name, c.cid, d.sid, d.data FROM {webform_submitted_data} d, {webform_component} c, {webform_submissions} s WHERE d.cid = c.cid AND d.sid = s.sid AND (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
+    $result = db_query("SELECT c.name, c.cid, d.sid, d.data, s.user, s.submitted, s.remote_addr FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s ON d.sid = s.sid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
   }
   return $result;  
 }
@@ -537,17 +560,31 @@ function _webform_report_get_body_content($data, $node) {
 
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) {
+        if($node->show_submitted) {
+          $fields['submitted'] = array('data' => t('Submitted'), 'field' => date('Y-m-d', $row->submitted), 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
+        if($node->show_user) {
+          $fields['user'] = array('data' => t('User'), 'field' => $row->user, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
+        if($node->show_ip) {
+          $fields['submitted'] = array('data' => t('IP'), 'field' => $row->remote_addr, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
       }
       if ($row->data != '0') { // checkbox, not selected
-        if($row->cid != $last_cid) { // will comma-separate multiple selections
-          $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
-        } else {
-          if ($last_value != '0') {
-            $values[$row->sid][$row->cid] .= ", ";
-          }
-          $values[$row->sid][$row->cid] .= $row->data;
+        if($row->cid == $last_cid) { // will comma-separate multiple selections
+          $row->data = ", " . $row->data;
         }
+        if($node->show_submitted) {
+          $values[$row->sid]["submitted"] = array('data' => date('Y-m-d', $row->submitted), 'class' => 'webform_report');
+        }
+        if($node->show_user) {
+          $values[$row->sid]["user"] = array('data' => $row->user, 'class' => 'webform_report');
+        }
+        if($node->show_ip) {
+          $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
+        }
+        $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
       }
 
       // override the report's key field with the table sort column, if applicable
