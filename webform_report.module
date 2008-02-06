@@ -560,34 +560,30 @@ function _webform_report_get_body_content($data, $node) {
     $count = 0;
 
     while ($row = db_fetch_object($data)) {
-      if (!isset($fields[$row->cid])) {
+      if (!isset($fields[$row->cid])) { // load fields once only
         if($node->options['show_submitted']) {
-          $fields['submitted'] = array('data' => t('Submitted'), 'field' => date('Y-m-d', $row->submitted), 'sort' => $_GET['sort'], 'class' => 'webform_report');
+          $fields['submitted'] = array('data' => t('Submitted'), 'field' => 'submitted', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         if($node->options['show_user']) {
-          $fields['user'] = array('data' => t('User'), 'field' => $row->user, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+          $fields['user'] = array('data' => t('User'), 'field' => 'user', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         if($node->options['show_ip']) {
-          $fields['show_ip'] = array('data' => t('IP Address'), 'field' => $row->remote_addr, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+          $fields['show_ip'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
-        if($row->type == "email") {
-          $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        } else {
-          $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
+        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+      }
+      if($node->options['show_submitted']) {
+        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d', $row->submitted), 'class' => 'webform_report');
+      }
+      if($node->options['show_user']) {
+        $values[$row->sid]["user"] = array('data' => '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>', 'class' => 'webform_report');
+      }
+      if($node->options['show_ip']) {
+        $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
       }
       if ($row->data != '0') { // checkbox, not selected
-        if($row->cid == $last_cid) { // will comma-separate multiple selections
+        if($row->cid == $last_cid && $last_value != 0) { // will comma-separate multiple selections
           $row->data = ", " . $row->data;
-        }
-        if($node->options['show_submitted']) {
-          $values[$row->sid]["submitted"] = array('data' => date('Y-m-d', $row->submitted), 'class' => 'webform_report');
-        }
-        if($node->options['show_user']) {
-          $values[$row->sid]["user"] = array('data' => '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>', 'class' => 'webform_report');
-        }
-        if($node->options['show_ip']) {
-          $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
         }
         if($row->type == "email") {
           $values[$row->sid][$row->cid] = array('data' => '<a href="mailto:' . $row->data . '">' . $row->data . '</a>', 'class' => 'webform_report');
