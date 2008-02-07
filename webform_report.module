@@ -571,12 +571,17 @@ function _webform_report_get_body_content($data, $node) {
           $fields['show_ip'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
-      }
+      } // end fields
       if($node->options['show_submitted']) {
-        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d', $row->submitted), 'class' => 'webform_report');
+        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d h:m a', $row->submitted), 'class' => 'webform_report');
       }
       if($node->options['show_user']) {
-        $values[$row->sid]["user"] = array('data' => '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>', 'class' => 'webform_report');
+        if($row->user == "") {
+          $row->user = "anonymous";
+        } else {
+          $row->user = '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>';
+        }
+        $values[$row->sid]["user"] = array('data' => $row->user, 'class' => 'webform_report');
       }
       if($node->options['show_ip']) {
         $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
