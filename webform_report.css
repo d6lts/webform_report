@@ -3,3 +3,7 @@ td.webform_report {
   text-align: left;
   vertical-align: top;
 }
+
+tr.odd td.webform_report {
+  background: #fff;
+}

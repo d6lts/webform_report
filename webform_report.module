@@ -590,6 +590,8 @@ function _webform_report_get_body_content($data, $node) {
         } else {
           $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
         }
+      } else {
+          $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'class' => 'webform_report'); // prevents the table cell from being omitted
       }
 
       // override the report's key field with the table sort column, if applicable
