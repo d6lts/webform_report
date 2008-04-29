@@ -154,7 +154,6 @@ function webform_report_load($node) {
         $webform_report->components[] = $row->cid;
         if (!isset($webform_report->options)) {
           $webform_report->options = unserialize($row->options);
-          // results per page, show submitted, show user, show ip
         }
       }
     }
@@ -711,20 +710,26 @@ function _webform_report_pager($fields, $values, $node) {
     $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
   }
   $output .= '<span class="pager-list">';
+  $css_class = "pager-next-active";
   foreach($pages as $key => $page) {
     switch($_GET['page']) {
       case($key + 1):
-        $output .= '<strong class="pager-current">' . ($key + 1) . '</strong>';
+        $css_class = "pager-current";
         break;
       case(1):
-        $output .= '<a class="pager-first active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $css_class = "pager-first active";
         break;
       case(count($pages)):
-        $output .= '<a class="pager-last active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $css_class = "pager-last active";
         break;
       default:
-        $output .= '<a class="pager-next active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $css_class = "pager-next active";
         break;
+    }
+    if($css_class == "pager-current") {
+      $output .= '<strong class="' . $css_class . '">' . ($key + 1) . '</strong>';
+    } else {
+      $output .= '<a class="' . $css_class . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
     }
   }
   $output .= '</span>';
