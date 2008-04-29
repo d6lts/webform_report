@@ -127,7 +127,7 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $webform_report = NULL;
   if(!isset($_POST['wnid'])) {
-    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.results_per_page, r.options FROM {webform_report} r LEFT JOIN {webform_report_component} rc ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY c.weight");
+    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.options FROM {webform_report} r LEFT JOIN {webform_report_component} rc ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY c.weight");
 
     if (db_num_rows($result) > 0) {
       while ($row = db_fetch_object($result)) {
@@ -152,13 +152,9 @@ function webform_report_load($node) {
         }
         // this array will be appended multiple times, so no pre-existence check
         $webform_report->components[] = $row->cid;
-        if (!isset($webform_report->results_per_page)) {
-          $webform_report->results_per_page = $row->results_per_page;
-        }
         if (!isset($webform_report->options)) {
-          foreach(explode(",", $row->options) as $option) {
-            $webform_report->options[$option] = $option;
-          }
+          $webform_report->options = unserialize($row->options);
+          // results per page, show submitted, show user, show ip
         }
       }
     }
@@ -174,7 +170,6 @@ function webform_report_load($node) {
     $webform_report->filter_value = $_POST['filter_value'];
     $webform_report->description = $_POST['description'];
     $webform_report->components = $_POST['components'];
-    $webform_report->results_per_page = $_POST['results_per_page'];
     $webform_report->options = $_POST['options'];
   }
 
@@ -206,11 +201,11 @@ function webform_report_prepare(&$node) {
   if (!isset($node->components)) {
     $node->components = $_POST['components'];
   }
-  if (!isset($node->results_per_page)) {
-    $node->results_per_page = $_POST['results_per_page'];
-  }
   if (!isset($node->options)) {
-    $node->options = $_POST['options'];
+    $node->options['results_per_page'] = $_POST['results_per_page'];
+    $node->options['show_submitted'] = $_POST['show_submitted'];
+    $node->options['show_user'] = $_POST['show_user'];
+    $node->options['show_ip'] = $_POST['show_ip'];
   }
 }
 
@@ -268,7 +263,7 @@ function webform_report_validate(&$node) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, results_per_page, options) VALUES (%d, %d, %d, '%s', %d, %d, '%s')", $node->nid, $node->wnid, $node->kcid, addslashes($node->description), $node->sort_order, $node->results_per_page, implode(',', $node->options));
+  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, options) VALUES (%d, %d, %d, '%s', %d, '%s')", $node->nid, $node->wnid, $node->kcid, addslashes($node->description), $node->sort_order, serialize($node->options));
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
@@ -445,7 +440,7 @@ function webform_report_form(&$node) {
       $default = $node->results_per_page;
     }
     else {
-      $default = 20;
+      $default = 25;
     }
     $options = array(25 => '25', 50 => '50', 75 => '75', 100 => '100');
     $form['webform_report']['results_per_page'] = array(
@@ -712,8 +707,8 @@ function _webform_report_pager($fields, $values, $node) {
   $output = theme_table($fields, $pages[($_GET['page'] - 1)]);
   $output .= '<div class="pager">';
   if($_GET['page'] > 1) {
-    $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?page=1">' . t('« first') .'</a>';
-    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
+    $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=1">' . t('« first') .'</a>';
+    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
   }
   $output .= '<span class="pager-list">';
   foreach($pages as $key => $page) {
@@ -722,20 +717,20 @@ function _webform_report_pager($fields, $values, $node) {
         $output .= '<strong class="pager-current">' . ($key + 1) . '</strong>';
         break;
       case(1):
-        $output .= '<a class="pager-first active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $output .= '<a class="pager-first active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
         break;
       case(count($pages)):
-        $output .= '<a class="pager-last active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $output .= '<a class="pager-last active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
         break;
       default:
-        $output .= '<a class="pager-next active" href="?page=' .($key + 1) . '">' . ($key + 1) . '</a>';
+        $output .= '<a class="pager-next active" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
         break;
     }
   }
   $output .= '</span>';
   if($_GET['page'] < count($pages)) {
-    $output .= '<a class="pager-last active" title="' . t('Go to next page') . '" href="?page=' . ($_GET['page'] + 1) . '">' . t('next ›') .'</a>';
-    $output .= '<a class="pager-last active" title="' . t('Go to last page') . '" href="?page=' . count($pages) . '">' . t('last »') .'</a>';
+    $output .= '<a class="pager-last active" title="' . t('Go to next page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] + 1) . '">' . t('next ›') .'</a>';
+    $output .= '<a class="pager-last active" title="' . t('Go to last page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . count($pages) . '">' . t('last »') .'</a>';
   }
   $output .= '</div>';
   return $output;
