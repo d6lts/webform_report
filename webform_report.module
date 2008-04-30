@@ -249,7 +249,7 @@ function webform_report_validate(&$node) {
           if ($_POST['kcid'] == 0) {
             form_set_error('kcid', t('You must select a field'));
           } else {
-            if($_POST['filter_type'] == 0 && $_POST['filter_value'] == '') {
+            if($_POST['filter_type'] != 0 && $_POST['filter_value'] == '') {
               form_set_error('filter_value', t('You must specify a filter value'));
             } else {
               if ($_POST['components'] == '') {
@@ -397,17 +397,12 @@ function webform_report_form(&$node) {
   unset($options);
 
   if (isset($node->kcid) && $node->kcid != 0 && $node->filter_type != 0) {
-    if($node->filter_type == 0) {
-      $required = FALSE;
-    } else {
-      $required = TRUE;
-    }
     $form['webform_report']['filter_value'] = array(
       '#type' => 'textfield',
       '#title' => t('Filter Value'),
       '#description' => t('Filter the key column using the specified value'),
       '#default_value' => t($node->filter_value),
-      '#required' => $required,
+      '#required' => TRUE,
       '#weight' => 4
     );
   }

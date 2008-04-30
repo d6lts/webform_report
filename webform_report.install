@@ -76,7 +76,7 @@ function webform_report_update_1(){
       );
       $items[] = update_sql("ALTER TABLE {webform_report} ADD options TEXT DEFAULT '' NOT NULL");
       $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page TINYINT UNSIGNED DEFAULT '25' NOT NULL");
-      $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type VARCHAR(8) DEFAULT 'none' NOT NULL");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type TINYINT DEFAULT 'none' NOT NULL");
       $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_value VARCHAR(128) DEFAULT '' NOT NULL");
       break;
     case 'pgsql':
@@ -96,7 +96,7 @@ function webform_report_update_1(){
       $items[] = update_sql("UPDATE {webform_report} SET results_per_page = '25'");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET NOT NULL");
 
-      $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type varchar(8)");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type SMALLINT");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_type SET DEFAULT 'none'");
       $items[] = update_sql("UPDATE {webform_report} SET filter_type = 'none'");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_type SET NOT NULL");
