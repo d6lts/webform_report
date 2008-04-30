@@ -127,7 +127,7 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $webform_report = NULL;
   if(!isset($_POST['wnid'])) {
-    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.options FROM {webform_report} r LEFT JOIN {webform_report_component} rc ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY c.weight");
+    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.options, r.results_per_page FROM {webform_report} r LEFT JOIN {webform_report_component} rc ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY c.weight");
 
     if (db_num_rows($result) > 0) {
       while ($row = db_fetch_object($result)) {
@@ -155,6 +155,9 @@ function webform_report_load($node) {
         if (!isset($webform_report->options)) {
           $webform_report->options = unserialize($row->options);
         }
+        if (!isset($webform_report->results_per_page)) {
+          $webform_report->results_per_page = $row->results_per_page;
+        }
       }
     }
     else {
@@ -170,6 +173,7 @@ function webform_report_load($node) {
     $webform_report->description = $_POST['description'];
     $webform_report->components = $_POST['components'];
     $webform_report->options = $_POST['options'];
+    $webform_report->results_per_page = $_POST['results_per_page'];
   }
 
   return $webform_report;
@@ -186,7 +190,7 @@ function webform_report_prepare(&$node) {
     $node->kcid = $_POST['kcid'];
   }
   if (!isset($node->kcid)) { 
-    $node->options['sort_order'] = $_POST['sort_order'];
+    $node->sort_order = $_POST['sort_order'];
   }
   if (!isset($node->filter_type)) { 
     $node->filter_type = $_POST['filter_type'];
@@ -201,10 +205,12 @@ function webform_report_prepare(&$node) {
     $node->components = $_POST['components'];
   }
   if (!isset($node->options)) {
-    $node->options['results_per_page'] = $_POST['results_per_page'];
     $node->options['show_submitted'] = $_POST['show_submitted'];
     $node->options['show_user'] = $_POST['show_user'];
     $node->options['show_ip'] = $_POST['show_ip'];
+  }
+  if (!isset($node->results_per_page)) {
+    $node->results_per_page = $_POST['results_per_page'];
   }
 }
 
@@ -262,7 +268,7 @@ function webform_report_validate(&$node) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, options) VALUES (%d, %d, %d, '%s', %d, '%s')", $node->nid, $node->wnid, $node->kcid, addslashes($node->description), $node->options['sort_order'], serialize($node->options));
+  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, options, results_per_page) VALUES (%d, %d, %d, '%s', %d, '%s', %d)", $node->nid, $node->wnid, $node->kcid, addslashes($node->description), $node->sort_order, serialize($node->options), $node->results_per_page);
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
@@ -371,7 +377,7 @@ function webform_report_form(&$node) {
       '#type' => 'select',
       '#title' => t("Sort order"),
       '#options' => $options,
-      '#default_value' => $node->options['sort_order'],
+      '#default_value' => $node->sort_order,
       '#weight' => 2,
     );
   }
@@ -435,8 +441,8 @@ function webform_report_form(&$node) {
   unset($options);
 
   if (isset($node->kcid) && $node->kcid != 0) {
-    if (isset($node->options['results_per_page'])) {
-      $default = $node->options['results_per_page'];
+    if (isset($node->results_per_page)) {
+      $default = $node->results_per_page;
     }
     else {
       $default = 25;
@@ -627,15 +633,15 @@ function _webform_report_get_body_content($data, $node) {
     if (isset($_GET['sort'])) { 
       switch ($_GET['sort']) {
         case "asc":
-          $node->options['sort_order'] = SORT_ASC;
+          $node->sort_order = SORT_ASC;
           break;
         case "desc":
-          $node->options['sort_order'] = SORT_DESC;
+          $node->sort_order = SORT_DESC;
           break;
       }
     }
     else { // override the table's sort order with the report's
-      if ($node->options['sort_order'] == SORT_ASC) {
+      if ($node->sort_order == SORT_ASC) {
         $_GET['sort'] = 'asc'; // default table sort will be ascending
       }
       else {
@@ -644,7 +650,7 @@ function _webform_report_get_body_content($data, $node) {
     }
 
     // sort the columns and their contents according to specified criteria
-    array_multisort($column[$node->kcid], (int)$node->options['sort_order'], $values);        
+    array_multisort($column[$node->kcid], (int)$node->sort_order, $values);        
 
     $output .= _webform_report_pager($fields, $values, $node);
   }
@@ -690,10 +696,10 @@ function _webform_report_page() {
  */
 function _webform_report_pager($fields, $values, $node) {
   // for backward compatibility
-  if(!$node->options['results_per_page']) {
+  if(!$node->results_per_page) {
     $results_per_page = 25;
   } else {
-    $results_per_page = $node->options['results_per_page'];
+    $results_per_page = $node->results_per_page;
   }
   // Add the css file for form display.
   drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');

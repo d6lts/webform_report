@@ -75,6 +75,7 @@ function webform_report_update_1(){
         ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
       );
       $items[] = update_sql("ALTER TABLE {webform_report} ADD options TEXT DEFAULT '' NOT NULL");
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page TINYINT UNSIGNED DEFAULT '25' NOT NULL");
       break;
     case 'pgsql':
       $items[] = update_sql("CREATE TABLE {webform_report_component} (
@@ -87,6 +88,11 @@ function webform_report_update_1(){
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN options SET DEFAULT ''");
       $items[] = update_sql("UPDATE {webform_report} SET options = ''");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN options SET NOT NULL");
+
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD results_per_page SMALLINT");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET DEFAULT '25'");
+      $items[] = update_sql("UPDATE {webform_report} SET results_per_page = '25'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET NOT NULL");
       break;
   }
   $items[] = update_sql("INSERT INTO {webform_report_component} (nid, cid) (SELECT nid, cid FROM {webform_report_temp})");
