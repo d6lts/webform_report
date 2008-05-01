@@ -7,8 +7,8 @@
  * and the data displayed is updated automatically as webforms are submitted. The data
  * can be sorted according to the viewer's preference without altering the report criteria.
  *
- * The module is written by Kristian Lance with and sponsored by Communications Research Centre
- * Canada (CRC), an agency of Industry Canada.
+ * The module is written by Kristian Lance for Communications Research Centre Canada (CRC),
+ * an agency of Industry Canada.
  *
  */
 
@@ -311,6 +311,7 @@ function webform_report_form(&$node) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#weight' => -3);
+
   $form['webform_report']['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -339,9 +340,9 @@ function webform_report_form(&$node) {
     $default = $node->wnid;
   }
   else {
-    $default = t("Select a webform");
+    $default = t('Select a webform');
   }
-  $options = _webform_report_get_webforms(t("Select a webform"));
+  $options = _webform_report_get_webforms(t('Select a webform'));
   $form['webform_report']['wnid'] = array(
     '#type' => 'select',
     '#title' => t("Webform"),
@@ -358,9 +359,9 @@ function webform_report_form(&$node) {
       $default = $node->kcid;
     }
     else {
-      $default = t("Select a field");
+      $default = t('Select a field');
     }
-    $options = _webform_report_get_components($node->wnid, t("Select a field"));
+    $options = _webform_report_get_components($node->wnid, t('Select a field'));
     $form['webform_report']['kcid'] = array(
       '#type' => 'select',
       '#title' => t("Key field"),
@@ -422,10 +423,10 @@ function webform_report_form(&$node) {
   unset($options);
 
   if (isset($node->kcid) && $node->kcid != 0) {
-    $options = array('show_submitted' => 'Show date/time submitted', 'show_user' => 'Show user', 'show_ip' => 'Show IP');
+    $options = array('show_submitted' => t('Show submitted date/time'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'));
     $form['webform_report']['options'] = array(
       '#type' => 'checkboxes',
-      '#title' => t("Display options"),
+      '#title' => t('Display options'),
       '#description' => t('Select display options for this report and click Preview to display the results'),
       '#options' => $options,
       '#default_value' => $node->options,
@@ -442,10 +443,10 @@ function webform_report_form(&$node) {
     else {
       $default = 25;
     }
-    $options = array(25 => '25', 50 => '50', 75 => '75', 100 => '100');
+    $options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
     $form['webform_report']['results_per_page'] = array(
       '#type' => 'select',
-      '#title' => t("Results per page"),
+      '#title' => t('Results per page'),
       '#options' => $options,
       '#default_value' => $default,
       '#weight' => 7,
@@ -568,24 +569,24 @@ function _webform_report_get_body_content($data, $node) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
       } // end fields
       if($node->options['show_submitted']) {
-        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d H:m', $row->submitted), 'class' => 'webform_report');
+        $values[$row->sid]['submitted'] = array('data' => date('Y-m-d H:m', $row->submitted), 'class' => 'webform_report');
       }
       if($node->options['show_user']) {
-        if($row->user == "") {
-          $row->user = "anonymous";
+        if($row->user == '') {
+          $row->user = 'anonymous';
         } else {
           $row->user = '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>';
         }
-        $values[$row->sid]["user"] = array('data' => $row->user, 'class' => 'webform_report');
+        $values[$row->sid]['user'] = array('data' => $row->user, 'class' => 'webform_report');
       }
       if($node->options['show_ip']) {
-        $values[$row->sid]["remote_addr"] = array('data' => $row->remote_addr, 'class' => 'webform_report');
+        $values[$row->sid]['remote_addr'] = array('data' => $row->remote_addr, 'class' => 'webform_report');
       }
       if ($row->data != '0') { // checkbox, not selected
         if($row->cid == $last_cid && $last_value != 0) { // will comma-separate multiple selections
           $row->data = ", " . $row->data;
         }
-        if($row->type == "email") {
+        if($row->type == 'email') {
           $values[$row->sid][$row->cid] = array('data' => '<a href="mailto:' . $row->data . '">' . $row->data . '</a>', 'class' => 'webform_report');
         } else {
           $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
@@ -615,7 +616,7 @@ function _webform_report_get_body_content($data, $node) {
     foreach ($fields as $key1 => $field) {
       foreach ($values as $key2 => $value) {
         // make sort order case-insensitive and remove spaces (and accents if accents module installed)
-        if (module_exists("accents")) {
+        if (module_exists('accents')) {
           $column[$key1][$key2] = trim(strtolower(accents_search_preprocess($value[$key1]['data'])));
         }
         else {
@@ -627,10 +628,10 @@ function _webform_report_get_body_content($data, $node) {
     // override the report's sort order with the table sort order, if applicable
     if (isset($_GET['sort'])) { 
       switch ($_GET['sort']) {
-        case "asc":
+        case 'asc':
           $node->sort_order = SORT_ASC;
           break;
-        case "desc":
+        case 'desc':
           $node->sort_order = SORT_DESC;
           break;
       }
@@ -644,16 +645,17 @@ function _webform_report_get_body_content($data, $node) {
       }
     }
 
+    // handle the sorting of optional, non-component fields
     switch($_GET['order']) {
-      case 'IP Address':
+      case t('IP Address'):
         $sort_col = $column['remote_addr'];
         $sort_type = SORT_NUMERIC;
         break;
-      case 'User':
+      case t('User'):
         $sort_col = $column['user'];
         $sort_type = SORT_STRING;
         break;
-      case 'Submitted':
+      case t('Submitted'):
         $sort_col = $column['submitted'];
         $sort_type = SORT_REGULAR;
         break;
@@ -668,10 +670,10 @@ function _webform_report_get_body_content($data, $node) {
     $output .= _webform_report_pager($fields, $values, $node);
   }
   else { // no submitted data
-    $output = t("Note: There are no submissions for the selected webform.</b> Either the form
+    $output = t('Note: There are no submissions for the selected webform.</b> Either the form
        has not yet been completed by anyone, or the results have been cleared. This will not
        prevent you from creating this report, but this message will be displayed on the report
-       page until someone submits the selected webform.");
+       page until someone submits the selected webform.');
   }
   return $output;
 }
@@ -682,7 +684,7 @@ function _webform_report_get_body_content($data, $node) {
  */
 function _webform_report_page() {
   $output = NULL;
-  if (user_access("access webform reports")) {
+  if (user_access('access webform reports')) {
     $header = array(
                     t('Title'), 
                     array('data' => t('View'),
@@ -729,23 +731,23 @@ function _webform_report_pager($fields, $values, $node) {
     $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
   }
   $output .= '<span class="pager-list">';
-  $css_class = "pager-next-active";
+  $css_class = 'pager-next-active';
   foreach($pages as $key => $page) {
     switch($_GET['page']) {
       case($key + 1):
-        $css_class = "pager-current";
+        $css_class = 'pager-current';
         break;
       case(1):
-        $css_class = "pager-first active";
+        $css_class = 'pager-first active';
         break;
       case(count($pages)):
-        $css_class = "pager-last active";
+        $css_class = 'pager-last active';
         break;
       default:
-        $css_class = "pager-next active";
+        $css_class = 'pager-next active';
         break;
     }
-    if($css_class == "pager-current") {
+    if($css_class == 'pager-current') {
       $output .= '<strong class="' . $css_class . '">' . ($key + 1) . '</strong>';
     } else {
       $output .= '<a class="' . $css_class . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
