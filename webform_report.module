@@ -568,7 +568,7 @@ function _webform_report_get_body_content($data, $node) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
       } // end fields
       if($node->options['show_submitted']) {
-        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d h:m a', $row->submitted), 'class' => 'webform_report');
+        $values[$row->sid]["submitted"] = array('data' => date('Y-m-d H:m', $row->submitted), 'class' => 'webform_report');
       }
       if($node->options['show_user']) {
         if($row->user == "") {
