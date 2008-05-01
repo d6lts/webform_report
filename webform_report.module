@@ -223,8 +223,9 @@ function webform_report_view($node, $teaser = 0, $page = 0) {
     return;
   }
 
-  $output = "<p>" . $node->description . "</p>";
-  $output .= _webform_report_get_body_content(_webform_report_get_data($node), $node);
+  $data = _webform_report_get_data($node);
+  $output = "<p>" . $node->description . " (" . db_num_rows($data) . " " . t('results') . ")</p>";
+  $output .= _webform_report_get_body_content($data, $node);
   $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
   $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
   return $node;
@@ -268,7 +269,7 @@ function webform_report_validate(&$node) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, addslashes($node->description), $node->sort_order, $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
+  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, $node->description, $node->sort_order, $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
@@ -573,7 +574,7 @@ function _webform_report_get_body_content($data, $node) {
       }
       if($node->options['show_user']) {
         if($row->user == '') {
-          $row->user = 'anonymous';
+          $row->user = t('anonymous');
         } else {
           $row->user = '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>';
         }
