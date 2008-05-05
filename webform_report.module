@@ -386,7 +386,7 @@ function webform_report_form(&$node) {
   unset($default, $options);
 
   if (isset($node->kcid) && $node->kcid != 0) {
-    $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('contains'));
+    $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'));
     $form['webform_report']['filter_type'] = array(
       '#type' => 'select',
       '#title' => t("Filter Type"),
@@ -575,8 +575,6 @@ function _webform_report_get_body_content($data, $node) {
       if($node->options['show_user']) {
         if($row->user == '') {
           $row->user = t('anonymous');
-        } else {
-          $row->user = '<a href="' . url('user/' . $row->uid) . '">' . $row->user . '</a>';
         }
         $values[$row->sid]['user'] = array('data' => $row->user, 'class' => 'webform_report');
       }
@@ -587,11 +585,7 @@ function _webform_report_get_body_content($data, $node) {
         if($row->cid == $last_cid && $last_value != 0) { // will comma-separate multiple selections
           $row->data = ", " . $row->data;
         }
-        if($row->type == 'email') {
-          $values[$row->sid][$row->cid] = array('data' => '<a href="mailto:' . $row->data . '">' . $row->data . '</a>', 'class' => 'webform_report');
-        } else {
-          $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
-        }
+        $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
       } else {
           $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'class' => 'webform_report'); // prevents the table cell from being omitted
       }
@@ -689,14 +683,28 @@ function _webform_report_get_body_content($data, $node) {
 function _webform_report_filter_values($values, $node) {
   $filtered_values = array();
   foreach($values as $key => $value) {
-    if($node->filter_type == 1) {
-      if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) == $node->filter_value) {
-        $filtered_values[] = $value;
-      }
-    } else if($node->filter_type == 2) {
-      if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
-        $filtered_values[] = $value;
-      }
+    switch($node->filter_type) {
+      case 1: // begins with
+        if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) == $node->filter_value) {
+          $filtered_values[] = $value;
+        }
+        break;
+      case 2: // does not begin with
+        if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) != $node->filter_value) {
+          $filtered_values[] = $value;
+        }
+        break;
+      case 3: // contains
+      default:
+        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
+          $filtered_values[] = $value;
+        }
+        break;
+      case 4: // does not contain
+        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
+          $filtered_values[] = $value;
+        }
+        break;
     }
   }
 
