@@ -97,8 +97,8 @@ function webform_report_update_1(){
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN results_per_page SET NOT NULL");
 
       $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type SMALLINT");
-      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_type SET DEFAULT 'none'");
-      $items[] = update_sql("UPDATE {webform_report} SET filter_type = 'none'");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_type SET DEFAULT '0'");
+      $items[] = update_sql("UPDATE {webform_report} SET filter_type = '0'");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_type SET NOT NULL");
 
       $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_value varchar(128)");
