@@ -1,7 +1,16 @@
+table.webform_report {
+  width: 100%;
+}
+
+table.webform_report tr {
+  width: 100%;
+}
+
 td.webform_report {
-  padding: 0px 10px 0px 0px;
+  padding: 0px 15px 0px 0px;
   text-align: left;
   vertical-align: top;
+  width: auto;
 }
 
 tr.odd td.webform_report {

@@ -138,6 +138,9 @@ function webform_report_load($node) {
         if (!isset($webform_report->kcid)) {
           $webform_report->kcid = $row->kcid;
         }
+        if (!isset($webform_report->sort_col)) {
+          $webform_report->sort_col = $row->kcid;
+        }
         if (!isset($webform_report->sort_order)) {
           $webform_report->sort_order = $row->sort;
         }
@@ -167,6 +170,7 @@ function webform_report_load($node) {
   else {
     $webform_report->wnid = $_POST['wnid'];
     $webform_report->kcid = $_POST['kcid'];
+    $webform_report->sort_order = $_POST['kcid'];
     $webform_report->sort_order = $_POST['sort_order'];
     $webform_report->filter_type = $_POST['filter_type'];
     $webform_report->filter_value = $_POST['filter_value'];
@@ -424,7 +428,7 @@ function webform_report_form(&$node) {
   unset($options);
 
   if (isset($node->kcid) && $node->kcid != 0) {
-    $options = array('show_submitted' => t('Show submitted date/time'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'));
+    $options = array('show_submitted' => t('Show submitted date'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'));
     $form['webform_report']['options'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Display options'),
@@ -591,8 +595,14 @@ function _webform_report_get_body_content($data, $node) {
       }
 
       // override the report's key field with the table sort column, if applicable
-      if (!isset($_GET['order']) && $node->kcid == $row->cid) { // no table sort link has been clicked yet
+      if (isset($_GET['order'])) {
+        if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
+          $node->sort_col = $row->cid;
+        }
+      }
+      elseif ($node->kcid == $row->cid) { // no table sort link has been clicked yet
         $_GET['order'] = $row->name; // make the sort arrow marker appear in the table column header
+        $node->sort_col = $node->kcid;
       }
 
       $last_cid = $row->cid;
@@ -650,7 +660,7 @@ function _webform_report_get_body_content($data, $node) {
         $sort_type = SORT_REGULAR;
         break;
       default:
-        $sort_col = $column[$node->kcid];
+        $sort_col = $column[$node->sort_col];
         $sort_type = SORT_REGULAR;
     }
 
@@ -695,7 +705,6 @@ function _webform_report_filter_values($values, $node) {
         }
         break;
       case 3: // contains
-      default:
         if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
           $filtered_values[] = $value;
         }
@@ -757,7 +766,7 @@ function _webform_report_pager($fields, $values, $node) {
   if(!$_GET['page']) {
     $_GET['page'] = '1';
   }
-  $output = theme_table($fields, $pages[($_GET['page'] - 1)]);
+  $output = theme_table($fields, $pages[($_GET['page'] - 1)], 'class="webform_report');
   $output .= '<div class="pager">';
   if($_GET['page'] > 1) {
     $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=1">' . t('« first') .'</a>';
