@@ -224,7 +224,7 @@ function webform_report_view($node, $teaser = 0, $page = 0) {
   }
 
   $data = _webform_report_get_data($node);
-  $output = "<p>" . $node->description . " (" . db_num_rows($data) . " " . t('results') . ")</p>";
+  $output = "<p>" . $node->description;
   $output .= _webform_report_get_body_content($data, $node);
   $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
   $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
@@ -597,12 +597,7 @@ function _webform_report_get_body_content($data, $node) {
       }
 
       // override the report's key field with the table sort column, if applicable
-      if (isset($_GET['order'])) {
-        if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
-          $node->kcid = $row->cid;
-        }
-      }
-      elseif ($node->kcid == $row->cid) { // no table sort link has been clicked yet
+      if (!isset($_GET['order']) && $node->kcid == $row->cid) { // no table sort link has been clicked yet
         $_GET['order'] = $row->name; // make the sort arrow marker appear in the table column header
       }
 
@@ -672,6 +667,9 @@ function _webform_report_get_body_content($data, $node) {
     if($node->filter_type != 0) {
       $values = _webform_report_filter_values($values, $node);
     }
+
+    // display number of rows after description
+    $output .= " (" . count($values) . " " . t('results') . ")</p>";
 
     $output .= _webform_report_pager($fields, $values, $node);
   }
