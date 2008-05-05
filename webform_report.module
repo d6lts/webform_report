@@ -668,6 +668,11 @@ function _webform_report_get_body_content($data, $node) {
     // sort the columns and their contents according to specified criteria
     array_multisort($sort_col, $sort_type, (int)$node->sort_order, $values);        
 
+    // filter the table values
+    if($node->filter_type != 0) {
+      $values = _webform_report_filter_values($values, $node);
+    }
+
     $output .= _webform_report_pager($fields, $values, $node);
   }
   else { // no submitted data
@@ -677,6 +682,27 @@ function _webform_report_get_body_content($data, $node) {
        page until someone submits the selected webform.');
   }
   return $output;
+}
+
+/**
+ * Filter an array of table values
+ * @return a filtered array
+ */
+function _webform_report_filter_values($values, $node) {
+  $filtered_values = array();
+  foreach($values as $key => $value) {
+    if($node->filter_type == 1) {
+      if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) == $node->filter_value) {
+        $filtered_values[] = $value;
+      }
+    } else if($node->filter_type == 2) {
+      if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
+        $filtered_values[] = $value;
+      }
+    }
+  }
+
+  return $filtered_values;
 }
 
 /**
