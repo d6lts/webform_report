@@ -690,12 +690,12 @@ function _webform_report_filter_values($values, $node) {
   foreach($values as $key => $value) {
     switch($node->filter_type) {
       case 1: // begins with
-        if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) == $node->filter_value) {
+        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
       case 2: // does not begin with
-        if(substr(trim($value[$node->kcid]['data']), 0, strlen($node->filter_value)) != $node->filter_value) {
+        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
