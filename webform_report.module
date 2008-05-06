@@ -238,33 +238,21 @@ function webform_report_view($node, $teaser = 0, $page = 0) {
 /**
  * Implementation of hook_validate
  */
-function webform_report_validate(&$node) {
-  $op = $form_values['op'];
-  
-  switch ($op) {
-    // Intercept these buttons and redirect:
-    case t('Submit'):
-    case t('Preview'):
-    case t(' Next > '):
-      $errors = form_get_errors();
-      if (empty($errors)) {
-        if ($_POST['wnid'] == 0) {
-          form_set_error('wnid', t('You must select a form'));
-        } else {
-          if ($_POST['kcid'] == 0) {
-            form_set_error('kcid', t('You must select a field'));
-          } else {
-            if($_POST['filter_type'] != 0 && $_POST['filter_value'] == '') {
-              form_set_error('filter_value', t('You must specify a filter value'));
-            } else {
-              if ($_POST['components'] == '') {
-                form_set_error('components', t('You must select at least one component  '));
-              }
-            }
-          }        
+function webform_report_validate($node, &$form) {
+  if ($_POST['wnid'] == 0) {
+    form_set_error('wnid', t('You must select a form'));
+  } else {
+    if ($_POST['kcid'] == 0) {
+      form_set_error('kcid', t('You must select a field'));
+    } else {
+      if($_POST['filter_type'] != 0 && $_POST['filter_value'] == '') {
+        form_set_error('filter_value', t('You must specify a filter value'));
+      } else {
+        if ($_POST['components'] == '') {
+          form_set_error('components', t('You must select at least one component  '));
         }
       }
-      break;
+    }        
   }
 }
 
