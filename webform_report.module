@@ -644,24 +644,23 @@ function _webform_report_get_body_content($data, $node) {
     // handle the sorting of optional, non-component fields
     switch($_GET['order']) {
       case t('IP Address'):
-        $sort_col = $column['remote_addr'];
+        $node->sort_col = 'remote_addr';
         $sort_type = SORT_NUMERIC;
         break;
       case t('User'):
-        $sort_col = $column['user'];
+        $node->sort_col = 'user';
         $sort_type = SORT_STRING;
         break;
       case t('Submitted'):
-        $sort_col = $column['date'];
+        $node->sort_col = 'date';
         $sort_type = SORT_REGULAR;
         break;
       default:
-        $sort_col = $column[$node->sort_col];
         $sort_type = SORT_REGULAR;
     }
 
     // sort the columns and their contents according to specified criteria
-    array_multisort($sort_col, $sort_type, (int)$node->sort_order, $values);        
+    array_multisort($column[$node->sort_col], $sort_type, (int)$node->sort_order, $values);        
 
     // filter the table values
     if($node->filter_type != 0) {
