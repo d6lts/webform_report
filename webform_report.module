@@ -127,7 +127,10 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $webform_report = NULL;
   if(!isset($_POST['wnid'])) {
-    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.filter_type, r.filter_value, r.options, r.results_per_page FROM {webform_report} r LEFT JOIN {webform_report_component} rc ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY c.weight");
+    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.filter_type, r.filter_value,
+                        r.options, r.results_per_page FROM {webform_report} r LEFT JOIN {webform_report_component} rc
+                        ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY
+                        c.weight");
 
     if (db_num_rows($result) > 0) {
       while ($row = db_fetch_object($result)) {
@@ -261,7 +264,9 @@ function webform_report_validate($node, &$form) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, $node->description, $node->sort_order, $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
+  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page)
+            VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, $node->description, $node->sort_order,
+            $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
@@ -526,7 +531,9 @@ function _webform_report_get_data($node) {
     }
     $query .= "'";
 
-    $result = db_query("SELECT c.name, c.cid, c.type, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
+    $result = db_query("SELECT c.name, c.cid, c.type, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr
+                        FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
+                        ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
   }
   return $result;  
 }
