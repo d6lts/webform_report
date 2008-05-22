@@ -376,7 +376,7 @@ function webform_report_form(&$node) {
       '#title' => t("Sort order"),
       '#options' => $options,
       '#default_value' => $node->sort_order,
-      '#weight' => 2,
+      '#weight' => 4,
     );
   }
   unset($default, $options);
@@ -389,7 +389,7 @@ function webform_report_form(&$node) {
       '#options' => $options,
       '#attributes' => array('onchange' => 'this.form.submit()'),
       '#default_value' => $node->filter_type,
-      '#weight' => 3,
+      '#weight' => 2,
     );
   }
   unset($options);
@@ -401,7 +401,7 @@ function webform_report_form(&$node) {
       '#description' => t('Filter the key column using the specified value'),
       '#default_value' => t($node->filter_value),
       '#required' => TRUE,
-      '#weight' => 4
+      '#weight' => 3
     );
   }
 
