@@ -214,6 +214,7 @@ function webform_report_prepare(&$node) {
     $node->options['show_date'] = $_POST['show_date'];
     $node->options['show_user'] = $_POST['show_user'];
     $node->options['show_ip'] = $_POST['show_ip'];
+    $node->options['show_edit'] = $_POST['show_edit'];
   }
   if (!isset($node->results_per_page)) {
     $node->results_per_page = $_POST['results_per_page'];
@@ -420,7 +421,7 @@ function webform_report_form(&$node) {
   unset($options);
 
   if (isset($node->kcid) && $node->kcid != 0) {
-    $options = array('show_date' => t('Show date'), 'show_time' => t('Show time'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'));
+    $options = array('show_date' => t('Show date'), 'show_time' => t('Show time'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'), 'show_edit' => t('Show edit link'));
     $form['webform_report']['options'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Display options'),
@@ -530,7 +531,7 @@ function _webform_report_get_data($node) {
     }
     $query .= "'";
 
-    $result = db_query("SELECT c.name, c.cid, c.type, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr
+    $result = db_query("SELECT c.name, c.cid, c.type, d.nid, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr
                         FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
                         ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
   }
@@ -566,6 +567,9 @@ function _webform_report_get_body_content($data, $node) {
           $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        if($node->options['show_edit']) {
+          $fields['edit'] = array('data' => t('Edit'), 'field' => 'show_edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
       } // end fields
       if($node->options['show_date'] || $node->options['show_time']) {
         if($node->options['show_date']) {
@@ -594,6 +598,9 @@ function _webform_report_get_body_content($data, $node) {
         $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
       } else {
           $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'class' => 'webform_report'); // prevents the table cell from being omitted
+      }
+      if($node->options['show_edit']) {
+        $values[$row->sid]['edit_link'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
       }
 
       // override the report's key field with the table sort column, if applicable
