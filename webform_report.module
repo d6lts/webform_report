@@ -47,8 +47,7 @@ function webform_report_access($op, $node) {
 
   switch ($op) {
     case "view":
-      // don't allow module to override permissions that restrict viewing of webform results
-      if(user_access("access webform results") && user_access("access webform reports")) {
+      if(user_access("access webform reports")) {
         return TRUE;
       }
     case "create":
