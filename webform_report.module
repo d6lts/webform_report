@@ -126,7 +126,7 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $webform_report = NULL;
   if(!isset($_POST['wnid'])) {
-    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.kcid, r.description, r.sort, r.filter_type, r.filter_value,
+    $result = db_query("SELECT r.nid, r.wnid, rc.cid, c.name, r.key, r.description, r.sort, r.filter_type, r.filter_value,
                         r.options, r.results_per_page FROM {webform_report} r LEFT JOIN {webform_report_component} rc
                         ON r.nid = rc.nid LEFT JOIN {webform_component} c ON rc.cid = c.cid WHERE rc.nid = '$node->nid' ORDER BY
                         c.weight");
@@ -137,11 +137,11 @@ function webform_report_load($node) {
         if (!isset($webform_report->wnid)) {
           $webform_report->wnid = $row->wnid;
         }
-        if (!isset($webform_report->kcid)) {
-          $webform_report->kcid = $row->kcid;
+        if (!isset($webform_report->key)) {
+          $webform_report->key = $row->key;
         }
         if (!isset($webform_report->sort_col)) {
-          $webform_report->sort_col = $row->kcid;
+          $webform_report->sort_col = $row->key;
         }
         if (!isset($webform_report->sort_order)) {
           $webform_report->sort_order = $row->sort;
@@ -171,8 +171,8 @@ function webform_report_load($node) {
   }
   else {
     $webform_report->wnid = $_POST['wnid'];
-    $webform_report->kcid = $_POST['kcid'];
-    $webform_report->sort_order = $_POST['kcid'];
+    $webform_report->key = $_POST['key'];
+    $webform_report->sort_order = $_POST['key'];
     $webform_report->sort_order = $_POST['sort_order'];
     $webform_report->filter_type = $_POST['filter_type'];
     $webform_report->filter_value = $_POST['filter_value'];
@@ -192,10 +192,10 @@ function webform_report_prepare(&$node) {
   if (!isset($node->wnid)) {
     $node->wnid = $_POST['wnid'];
   }
-  if (!isset($node->kcid)) { 
-    $node->kcid = $_POST['kcid'];
+  if (!isset($node->key)) { 
+    $node->key = $_POST['key'];
   }
-  if (!isset($node->kcid)) { 
+  if (!isset($node->key)) { 
     $node->sort_order = $_POST['sort_order'];
   }
   if (!isset($node->filter_type)) { 
@@ -245,8 +245,8 @@ function webform_report_validate($node, &$form) {
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
   } else {
-    if ($_POST['kcid'] == 0) {
-      form_set_error('kcid', t('You must select a field'));
+    if ($_POST['key'] == '') {
+      form_set_error('key', t('You must select a field'));
     } else {
       if($_POST['filter_type'] != 0 && $_POST['filter_value'] == '') {
         form_set_error('filter_value', t('You must specify a filter value'));
@@ -264,8 +264,8 @@ function webform_report_validate($node, &$form) {
  */
 function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
-  db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page)
-            VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, $node->description, $node->sort_order,
+  db_query("INSERT INTO {webform_report} (nid, wnid, key, description, sort, filter_type, filter_value, options, results_per_page)
+            VALUES (%d, %d, '%s', '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->key, $node->description, $node->sort_order,
             $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
@@ -338,7 +338,7 @@ function webform_report_form(&$node) {
     $default = $node->wnid;
   }
   else {
-    $default = t('Select a webform');
+    $default = array('0' => t('Select a webform'));
   }
   $options = _webform_report_get_webforms(t('Select a webform'));
   $form['webform_report']['wnid'] = array(
@@ -353,14 +353,14 @@ function webform_report_form(&$node) {
   unset($default, $options);
 
   if (isset($node->wnid) && $node->wnid != 0) {
-    if (isset($node->kcid)) {
-      $default = $node->kcid;
+    if (isset($node->key)) {
+      $default = $node->key;
     }
     else {
       $default = t('Select a field');
     }
-    $options = _webform_report_get_components($node->wnid, t('Select a field'));
-    $form['webform_report']['kcid'] = array(
+    $options = array_merge(_webform_report_get_components($node->wnid, t('Select a field')), array('date' => t('Date/time'), 'user' => t('User'), 'remote_addr' => t('IP Address')));
+    $form['webform_report']['key'] = array(
       '#type' => 'select',
       '#title' => t("Key field"),
       '#default_value' => $default,
@@ -382,7 +382,7 @@ function webform_report_form(&$node) {
   }
   unset($default, $options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (isset($node->key) && $node->key != '0') {
     $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'));
     $form['webform_report']['filter_type'] = array(
       '#type' => 'select',
@@ -395,7 +395,7 @@ function webform_report_form(&$node) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0 && $node->filter_type != 0) {
+  if (isset($node->key) && $node->key != '0' && $node->filter_type != 0) {
     $form['webform_report']['filter_value'] = array(
       '#type' => 'textfield',
       '#title' => t('Filter Value'),
@@ -406,7 +406,7 @@ function webform_report_form(&$node) {
     );
   }
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (isset($node->key) && $node->key != '0') {
     $options = _webform_report_get_components($node->wnid);
     $form['webform_report']['components'] = array(
       '#type' => 'checkboxes',
@@ -420,7 +420,7 @@ function webform_report_form(&$node) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (isset($node->key) && $node->key != '0') {
     $options = array('show_date' => t('Show date'), 'show_time' => t('Show time'), 'show_user' => t('Show user'), 'show_ip' => t('Show IP Address'), 'show_edit' => t('Show edit link'));
     $form['webform_report']['options'] = array(
       '#type' => 'checkboxes',
@@ -434,7 +434,7 @@ function webform_report_form(&$node) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (isset($node->key) && $node->key != '') {
     if (isset($node->results_per_page)) {
       $default = $node->results_per_page;
     }
@@ -452,7 +452,7 @@ function webform_report_form(&$node) {
   }
   unset($options, $default);
 
-  if (!isset($node->kcid) || $node->kcid == 0) {
+  if (!isset($node->key) || $node->key == '') {
     $form['webform_report']['next'] = array(
       '#type' => 'button',
       '#value' => t(' Next > '),
@@ -512,7 +512,7 @@ function _webform_report_get_components($nid, $default = NULL) {
 /**
  * Get date data for the specified webform
  *
- * @param kcid is a numeric key field identifier
+ * @param key is a numeric key field identifier
  * @param components is an array of fields to include in the report
  * @return a database query result set
  */
@@ -557,6 +557,9 @@ function _webform_report_get_body_content($data, $node) {
 
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) { // load fields once only
+        if($node->options['show_edit']) {
+          $fields['edit'] = array('data' => t('Edit'), 'field' => 'edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        }
         if($node->options['show_date'] || $node->options['show_time']) {
           $fields['date'] = array('data' => t('Submitted'), 'field' => 'date', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
@@ -567,10 +570,10 @@ function _webform_report_get_body_content($data, $node) {
           $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
         }
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        if($node->options['show_edit']) {
-          $fields['edit'] = array('data' => t('Edit'), 'field' => 'show_edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
       } // end fields
+      if($node->options['show_edit']) {
+        $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
+      }
       if($node->options['show_date'] || $node->options['show_time']) {
         if($node->options['show_date']) {
           $dateformat = 'Y-m-d';
@@ -599,19 +602,30 @@ function _webform_report_get_body_content($data, $node) {
       } else {
           $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'class' => 'webform_report'); // prevents the table cell from being omitted
       }
-      if($node->options['show_edit']) {
-        $values[$row->sid]['edit_link'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
-      }
 
       // override the report's key field with the table sort column, if applicable
       if (isset($_GET['order'])) {
-        if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
+        if ($_GET['order'] == $row->name && $node->key != $row->cid) {
           $node->sort_col = $row->cid;
         }
       }
-      elseif ($node->kcid == $row->cid) { // no table sort link has been clicked yet
-        $_GET['order'] = $row->name; // make the sort arrow marker appear in the table column header
-        $node->sort_col = $node->kcid;
+      else {
+        // no table sort link has been clicked yet
+        switch($node->key) {
+          case $row->cid:
+            $_GET['order'] = $row->name; // make the sort arrow marker appear in the table column header
+            break;
+          case 'remote_addr':
+            $_GET['order'] = t('IP Address');
+            break;
+          case 'user':
+            $_GET['order'] = t('User');
+            break;
+          case 'date':
+            $_GET['order'] = t('Submitted');
+            break;
+        }
+        $node->sort_col = $node->key;
       }
 
       $last_cid = $row->cid;
@@ -658,7 +672,7 @@ function _webform_report_get_body_content($data, $node) {
     switch($_GET['order']) {
       case t('IP Address'):
         $node->sort_col = 'remote_addr';
-        $sort_type = SORT_NUMERIC;
+        $sort_type = SORT_REGULAR;
         break;
       case t('User'):
         $node->sort_col = 'user';
@@ -703,22 +717,22 @@ function _webform_report_filter_values($values, $node) {
   foreach($values as $key => $value) {
     switch($node->filter_type) {
       case 1: // begins with
-        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
+        if(substr(strtolower(trim($value[$node->key]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
       case 2: // does not begin with
-        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
+        if(substr(strtolower(trim($value[$node->key]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
       case 3: // contains
-        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
+        if(strpos(strtolower(trim($value[$node->key]['data'])), strtolower($node->filter_value)) !== FALSE) {
           $filtered_values[] = $value;
         }
         break;
       case 4: // does not contain
-        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
+        if(strpos(strtolower(trim($value[$node->key]['data'])), strtolower($node->filter_value)) === FALSE) {
           $filtered_values[] = $value;
         }
         break;
