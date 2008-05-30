@@ -10,7 +10,7 @@ function webform_report_install() {
       db_query("CREATE TABLE if not exists {webform_report} (
         nid int(10) unsigned NOT NULL default '0',
         wnid int(10) unsigned NOT NULL default '0',
-        kcid int(10) unsigned NOT NULL default '0',
+        key varchar(128) NOT NULL default '',
         description text default NULL,
         sort int(2) NOT NULL default '4',
         PRIMARY KEY  (nid)
@@ -29,7 +29,7 @@ function webform_report_install() {
         nid integer NOT NULL default '0',
         wnid integer NOT NULL default '0',
         cid integer NOT NULL default '0',
-        kcid integer NOT NULL default '0',
+        key varchar(128) NOT NULL default '',
         description text,
         sort smallint NOT NULL default '4',
         PRIMARY KEY  (nid)
@@ -44,7 +44,7 @@ function webform_report_install() {
       break;
   }
   
-  variable_set('webform_report_version',array('text'=>'4.7.1', 'build' => '471'));
+  variable_set('webform_report_version',array('text'=>'5.1.5', 'build' => '515'));
 
   $success = TRUE;
 
@@ -105,10 +105,16 @@ function webform_report_update_1(){
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_value SET DEFAULT ''");
       $items[] = update_sql("UPDATE {webform_report} SET filter_value = ''");
       $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN filter_value SET NOT NULL");
-      break;
+
+      $items[] = update_sql("ALTER TABLE {webform_report} ADD key varchar(128)");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN key SET DEFAULT ''");
+      $items[] = update_sql("UPDATE {webform_report} SET key = ''");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN key SET NOT NULL");
+       break;
   }
   $items[] = update_sql("INSERT INTO {webform_report_component} (nid, cid) (SELECT nid, cid FROM {webform_report_temp})");
   $items[] = update_sql("DROP TABLE {webform_report_temp}");
+  $items[] = update_sql("UPDATE {webform_report} SET key = kcid");
 
   return $items;
 }
