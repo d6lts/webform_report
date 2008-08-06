@@ -3,6 +3,10 @@ table.webform_report tr {
   width: 100%;
 }
 
+th.webform_report {
+  vertical-align: bottom;
+}
+
 td.webform_report {
   padding: 0px 15px 0px 0px;
   text-align: left;
