@@ -140,9 +140,6 @@ function webform_report_load($node) {
         if (!isset($webform_report->kcid)) {
           $webform_report->kcid = $row->kcid;
         }
-        if (!isset($webform_report->kcid)) {
-          $webform_report->kcid = $row->kcid;
-        }
         if (!isset($webform_report->sort)) {
           $webform_report->sort = $row->sort;
         }
@@ -681,7 +678,7 @@ function _webform_report_get_body_content($data, $node) {
     }
 
     // sort the columns and their contents according to specified criteria
-    array_multisort($column[$node->kcid], $node->sort, $values);        
+    array_multisort($column[$node->kcid], (int)$node->sort, $values);        
 
     // filter the table values
     if($node->filter_type != 0) {
