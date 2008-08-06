@@ -550,24 +550,23 @@ function _webform_report_get_body_content($data, $node) {
     $values = array(); // webform field values
     $last_value = 0;
 
-    // create an array where the sort column is the webform field name
-    $count = 0;
+    // begin fields
+    if($node->options['show_edit']) {
+      $fields['edit'] = array('data' => t('Edit'), 'field' => 'edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+    }
+    if($node->options['show_date'] || $node->options['show_time']) {
+      $fields['date'] = array('data' => t('Submitted'), 'field' => 'date', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+    }
+    if($node->options['show_user']) {
+      $fields['user'] = array('data' => t('User'), 'field' => 'user', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+    }
+    if($node->options['show_ip']) {
+      $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+    }
 
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) { // load fields once only
-        if($node->options['show_edit']) {
-          $fields['edit'] = array('data' => t('Edit'), 'field' => 'edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
-        if($node->options['show_date'] || $node->options['show_time']) {
-          $fields['date'] = array('data' => t('Submitted'), 'field' => 'date', 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
-        if($node->options['show_user']) {
-          $fields['user'] = array('data' => t('User'), 'field' => 'user', 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
-        if($node->options['show_ip']) {
-          $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
-        }
-        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report' . $active);
       } // end fields
       if($node->options['show_edit']) {
         $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
@@ -624,9 +623,7 @@ function _webform_report_get_body_content($data, $node) {
             break;
         }
       }
-
       $last_cid = $row->cid;
-      $last_value = $row->data;
     }
 
     reset($fields); // top
