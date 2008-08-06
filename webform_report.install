@@ -76,8 +76,9 @@ function webform_report_uninstall() {
 function webform_report_update_1(){
   $items[] = update_sql("SELECT * INTO {webform_report_temp} FROM {webform_report}");
   $items[] = update_sql("DROP TABLE {webform_report}");
-  $items[] = update_sql("SELECT DISTINCT nid, wnid, kcid AS sort_col, description, sort AS sort_type INTO {webform_report} FROM {webform_report_temp}");
+  $items[] = update_sql("SELECT DISTINCT nid, wnid, kcid, description, sort AS sort_type INTO {webform_report} FROM {webform_report_temp}");
   $items[] = update_sql("ALTER TABLE {webform_report} ADD PRIMARY KEY (nid)");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD sort_col varchar(128) NOT NULL default ''");
   $items[] = update_sql("ALTER TABLE {webform_report} ADD options text NOT NULL default ''");
   $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_value varchar(128) NOT NULL default ''");
   switch ($GLOBALS['db_type']) {
@@ -103,6 +104,8 @@ function webform_report_update_1(){
       $items[] = update_sql("ALTER TABLE {webform_report} ADD filter_type smallint NOT NULL default '0'");
       break;
   }
+  $items[] = update_sql("UPDATE {webform_report} SET sort_col = kcid");
+  $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN kcid");
   $items[] = update_sql("INSERT INTO {webform_report_component} (nid, cid) (SELECT nid, cid FROM {webform_report_temp})");
   $items[] = update_sql("DROP TABLE {webform_report_temp}");
 
