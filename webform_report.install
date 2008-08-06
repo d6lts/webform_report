@@ -74,7 +74,7 @@ function webform_report_uninstall() {
  * Drupal 5 updates
  */
 // New table structure to eliminate redundancy
-function webform_report_update_11(){
+function webform_report_update_1(){
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
