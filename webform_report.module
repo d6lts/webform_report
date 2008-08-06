@@ -566,7 +566,7 @@ function _webform_report_get_body_content($data, $node) {
 
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) { // load fields once only
-        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report' . $active);
+        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
       } // end fields
       if($node->options['show_edit']) {
         $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
