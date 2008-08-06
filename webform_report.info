@@ -1,4 +1,5 @@
 ; $id$
-name = "Webform Report"
-description = "Allows users to create reports from webform data. Will use accents module, if present, to correctly sort accented characters."
-dependencies = webform
+name = Webform Report
+description = Allows users to create reports from webform data. Will use accents module, if present, to correctly sort accented characters.
+dependencies[] = webform
+core = 5.x
