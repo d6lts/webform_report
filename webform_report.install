@@ -16,7 +16,7 @@ function webform_report_install() {
         options text NOT NULL default '',
         filter_type int(2) unsigned NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
-        results_per_page int(1) unsigned NOT NULL default '25',
+        results_per_page int(1) unsigned NOT NULL default '20',
         PRIMARY KEY  (nid)
         ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
       );
@@ -37,7 +37,7 @@ function webform_report_install() {
         options text NOT NULL default '',
         filter_type smallint NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
-        results_per_page smallint NOT NULL default '25',
+        results_per_page smallint NOT NULL default '20',
         PRIMARY KEY  (nid)
         )"
       );
@@ -96,7 +96,7 @@ function webform_report_update_1(){
         options text NOT NULL default '',
         filter_type int(2) unsigned NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
-        results_per_page int(1) unsigned NOT NULL default '25',
+        results_per_page int(1) unsigned NOT NULL default '20',
         PRIMARY KEY  (nid)
         ) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */"
       );
@@ -117,7 +117,7 @@ function webform_report_update_1(){
         options text NOT NULL default '',
         filter_type smallint NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
-        results_per_page smallint NOT NULL default '25',
+        results_per_page smallint NOT NULL default '20',
         PRIMARY KEY  (nid)
         )"
       );

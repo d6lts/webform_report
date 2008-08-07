@@ -435,7 +435,7 @@ function webform_report_form(&$node) {
       $default = $node->results_per_page;
     }
     else {
-      $default = 25;
+      $default = 20;
     }
     $options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
     $form['webform_report']['results_per_page'] = array(
@@ -767,7 +767,7 @@ function _webform_report_page() {
 function _webform_report_pager($fields, $values, $node) {
   // for backward compatibility
   if(!$node->results_per_page) {
-    $results_per_page = 25;
+    $results_per_page = 20;
   } else {
     $results_per_page = $node->results_per_page;
   }
