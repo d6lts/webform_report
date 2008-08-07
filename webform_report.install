@@ -66,8 +66,17 @@ function webform_report_install() {
  * Implementation of hook_uninstall
  */
 function webform_report_uninstall() {
-  db_query('drop table {webform_report}');
-  db_query('drop table {webform_report_component');
+  db_query('DROP TABLE {webform_report}');
+  db_query('DROP TABLE {webform_report_component}');
+  variable_del("webform_report");
+
+  // delete all webform reports
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'webform_report'");
+
+  while($webform_report_node = db_fetch_object($result)) {
+    node_delete($webform_report_node->nid);
+  }
+  node_type_delete('webform_report');
 }
 
 /**
