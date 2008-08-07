@@ -1,20 +1,21 @@
 table.webform_report,
 table.webform_report tr {
   width: auto;
+  empty-cells: show;
 }
 
-th.webform_report {
+table.webform_report th {
   vertical-align: bottom;
   width: auto;
 }
 
-td.webform_report {
+table.webform_report td {
   padding: 0px 15px 0px 0px;
   text-align: left;
   vertical-align: top;
   width: auto;
 }
 
-tr.odd td.webform_report {
+table.webform_report tr.odd td {
   background: #fff;
 }

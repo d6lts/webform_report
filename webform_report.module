@@ -754,7 +754,7 @@ function _webform_report_page() {
 
     }
   
-    $output = theme('table', $header, $rows);
+    $output = theme_table($header, $rows, array('class' => 'webform'));
     drupal_set_title($node->title);
   }
   return $output;
@@ -779,7 +779,7 @@ function _webform_report_pager($fields, $values, $node) {
   if(!$_GET['page']) {
     $_GET['page'] = '1';
   }
-  $output = theme_table($fields, $pages[($_GET['page'] - 1)], 'class="webform_report');
+  $output = theme_table($fields, $pages[($_GET['page'] - 1)], array('class' => 'webform_report'));
   $output .= '<div class="pager">';
   if($_GET['page'] > 1) {
     $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=1">' . t('« first') .'</a>';
