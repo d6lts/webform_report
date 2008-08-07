@@ -526,7 +526,7 @@ function _webform_report_get_data($node) {
     }
     $query .= "'";
 
-    $result = db_query("SELECT c.name, c.cid, c.type, d.nid, d.sid, d.data, s.user, s.uid, u.name as user, s.submitted, s.remote_addr
+    $result = db_query("SELECT c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
                         FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
                         ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE (" . $query . ") ORDER BY d.sid, c.cid, c.name, d.data");
   }
