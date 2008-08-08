@@ -7,6 +7,7 @@ table.webform_report tr {
 table.webform_report th {
   vertical-align: bottom;
   width: auto;
+  height: auto;
 }
 
 table.webform_report td {
@@ -22,4 +23,8 @@ table.webform_report tr.odd td {
 
 table.webform_report tr.even td {
   background: #eee;
+}
+
+table.webform_report tr:hover td {
+  background: #ffffcc;
 }

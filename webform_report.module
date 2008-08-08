@@ -566,7 +566,7 @@ function _webform_report_get_body_content($data, $node) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       } // end fields
       if($node->options['show_edit']) {
-        $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>');
+        $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/submission/' . $row->sid . '/edit') . '">' . t('edit') . '</a>');
       }
       if($node->options['show_date'] || $node->options['show_time']) {
         if($node->options['show_date']) {
