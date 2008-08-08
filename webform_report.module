@@ -549,24 +549,24 @@ function _webform_report_get_body_content($data, $node) {
 
     // begin fields
     if($node->options['show_edit']) {
-      $fields['edit'] = array('data' => t('Edit'), 'field' => 'edit', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+      $fields['edit'] = array('data' => t('Edit'), 'field' => 'edit', 'sort' => $_GET['sort']);
     }
     if($node->options['show_date'] || $node->options['show_time']) {
-      $fields['date'] = array('data' => t('Submitted'), 'field' => 'date', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+      $fields['date'] = array('data' => t('Submitted'), 'field' => 'date', 'sort' => $_GET['sort']);
     }
     if($node->options['show_user']) {
-      $fields['user'] = array('data' => t('User'), 'field' => 'user', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+      $fields['user'] = array('data' => t('User'), 'field' => 'user', 'sort' => $_GET['sort']);
     }
     if($node->options['show_ip']) {
-      $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort'], 'class' => 'webform_report');
+      $fields['remote_addr'] = array('data' => t('IP Address'), 'field' => 'remote_addr', 'sort' => $_GET['sort']);
     }
 
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) { // load fields once only
-        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort'], 'class' => 'webform_report');
+        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       } // end fields
       if($node->options['show_edit']) {
-        $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>', 'class' => 'webform_report');
+        $values[$row->sid]['edit'] = array('data' => '<a href="' . url('node/'. $row->nid . '/results/edit/' . $row->sid) . '">' . t('edit') . '</a>');
       }
       if($node->options['show_date'] || $node->options['show_time']) {
         if($node->options['show_date']) {
