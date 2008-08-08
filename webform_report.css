@@ -19,3 +19,7 @@ table.webform_report td {
 table.webform_report tr.odd td {
   background: #fff;
 }
+
+table.webform_report tr.even td {
+  background: #eee;
+}
