@@ -577,24 +577,24 @@ function _webform_report_get_body_content($data, $node) {
         } else if($node->options['show_time']) {
           $dateformat = 'H:m';
         }
-        $values[$row->sid]['date'] = array('data' => date($dateformat, $row->submitted), 'class' => 'webform_report');
+        $values[$row->sid]['date'] = array('data' => date($dateformat, $row->submitted));
       }
       if($node->options['show_user']) {
         if($row->user == '') {
           $row->user = t('anonymous');
         }
-        $values[$row->sid]['user'] = array('data' => $row->user, 'class' => 'webform_report');
+        $values[$row->sid]['user'] = array('data' => $row->user);
       }
       if($node->options['show_ip']) {
-        $values[$row->sid]['remote_addr'] = array('data' => $row->remote_addr, 'class' => 'webform_report');
+        $values[$row->sid]['remote_addr'] = array('data' => $row->remote_addr);
       }
       if ($row->data != '0') { // checkbox, not selected
         if($row->cid == $last_cid && $last_value != 0) { // will comma-separate multiple selections
           $row->data = ", " . $row->data;
         }
-        $values[$row->sid][$row->cid] = array('data' => $row->data, 'class' => 'webform_report');
+        $values[$row->sid][$row->cid] = array('data' => $row->data);
       } else {
-          $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'class' => 'webform_report'); // prevents the table cell from being omitted
+          $values[$row->sid][$row->cid] = array('data' => '&nbsp;'); // prevents the table cell from being omitted
       }
 
       // override the report's sort column with the table sort column, if applicable
