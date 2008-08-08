@@ -5,9 +5,12 @@ table.webform_report tr {
 }
 
 table.webform_report th {
+  text-align: left;
   vertical-align: bottom;
   width: auto;
   height: auto;
+  padding: 0px;
+  padding-right: 10px;
 }
 
 table.webform_report td {

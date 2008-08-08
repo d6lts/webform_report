@@ -685,6 +685,8 @@ function _webform_report_get_body_content($data, $node) {
       $values = _webform_report_filter_values($values, $node);
     }
 
+    $values = _webform_report_add_data_links($fields, $values);
+
     // display number of rows after description
     $output .= " (" . count($values) . " " . t('results') . ")</p>";
 
@@ -698,6 +700,33 @@ function _webform_report_get_body_content($data, $node) {
   }
   return $output;
 }
+
+/**
+ * Add links to relevant data fields
+ * @param fields is an array of table fields
+ * @param values is an array of table values
+ * @return an array of table values
+ */
+function _webform_report_add_data_links($fields, $values) {
+  foreach($fields as $fkey => $field) {
+    foreach($values as $vkey => $value) {
+      $data = &$values[$vkey][$fkey]['data']; // shorten access to the data element
+
+      if($fkey == 'user') {
+        $data = '<a href="' . url('user/' . _webform_report_get_uid_for_user($data)) . '">' . $data . '</a>';
+      } else {
+        if(valid_email_address($data)) {
+          $data = '<a href="mailto:' . $data . '">' . $data . '</a>';
+        } else {
+          if(valid_url($data, TRUE)) {
+            $data = '<a href="' . $data . '">' . $data . '</a>';
+          }
+        }
+      }
+    }
+  }
+  return $values;
+} // function _webform_report_add_data_links
 
 /**
  * Filter an array of table values
@@ -732,6 +761,17 @@ function _webform_report_filter_values($values, $node) {
 
   return $filtered_values;
 }
+
+/**
+ * Returns the uid corresponding with a valid username
+ * @param a string consisting of a valid username
+ * @return a uid for the specified user
+ */
+function _webform_report_get_uid_for_user($name) {
+  $result = db_query("SELECT uid FROM users WHERE name = '" . $name . "'");
+  $user = db_fetch_object($result);
+  return $user->uid;
+} // function webform_report_get_uid_for_user
 
 /**
  * Display a list of webform reports in the admin area
