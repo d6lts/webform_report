@@ -59,6 +59,7 @@ function webform_report_access($op, $node) {
       if(user_access("access webform reports")) {
         return TRUE;
       }
+      break;
     case "create":
       return user_access("create webform reports");
       break;
