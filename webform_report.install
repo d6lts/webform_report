@@ -11,7 +11,7 @@ function webform_report_install() {
 } // function webform_report_install
 
 function webform_report_schema() {
-  $schema['webfrom_report'] = array (
+  $schema['webform_report'] = array (
     'fields' => array(
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
