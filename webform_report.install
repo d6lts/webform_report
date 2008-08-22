@@ -17,11 +17,11 @@ function webform_report_schema() {
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'kcid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'description' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),
-      'sort' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => '4', 'size' => 'small'),
+      'sort' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 4, 'size' => 'small'),
       'options' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),
-      'filter_type' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => '0', 'size' => 'small'),
-      'filter_value' => array('type' => 'varchar', 'not null' => TRUE, 'default' => '', 'size' => '128'),
-      'results_per_page' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => '20', 'size' => 'tiny')
+      'filter_type' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'size' => 'small'),
+      'filter_value' => array('type' => 'varchar', 'not null' => TRUE, 'default' => '', 'length' => 128),
+      'results_per_page' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 20, 'size' => 'tiny')
     ),
     'primary key' => array('nid')
   );
