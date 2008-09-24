@@ -47,12 +47,17 @@ function _webform_report_get_components($nid) {
  * @return a database query result set
  */
 function _webform_report_get_data($node) {
-  //$result = db_query("SELECT w.nid, c.name FROM {webform} w LEFT JOIN {webform_component} c ON w.nid = c.nid");
-
-  
   $result = db_query("SELECT w.nid, c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
-                        FROM {webform} w LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
-                        ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE d.nid = c.nid AND c.nid = s.nid AND s.nid = '" . $node->wnid . "' ORDER BY d.sid, c.cid, c.name, d.data");
+                      FROM {webform} w
+                      LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid
+                      LEFT JOIN {webform_component} c ON d.cid = c.cid
+                      LEFT JOIN {webform_submissions} s  ON d.sid = s.sid
+                      LEFT JOIN {users} u ON s.uid = u.uid
+                      WHERE d.data != ''
+                      AND d.nid = c.nid
+                      AND c.nid = s.nid
+                      AND s.nid = '" . $node->wnid . "'
+                      ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data");
   return $result;  
 }
 
