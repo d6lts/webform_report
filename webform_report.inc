@@ -47,9 +47,12 @@ function _webform_report_get_components($nid) {
  * @return a database query result set
  */
 function _webform_report_get_data($node) {
-  $result = db_query("SELECT c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
-                        FROM {webform_submitted_data} d LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
-                        ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid ORDER BY d.sid, c.cid, c.name, d.data");
+  //$result = db_query("SELECT w.nid, c.name FROM {webform} w LEFT JOIN {webform_component} c ON w.nid = c.nid");
+
+  
+  $result = db_query("SELECT w.nid, c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
+                        FROM {webform} w LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid LEFT JOIN {webform_component} c ON d.cid = c.cid LEFT JOIN {webform_submissions} s
+                        ON d.sid = s.sid LEFT JOIN {users} u ON s.uid = u.uid WHERE d.nid = c.nid AND c.nid = s.nid AND s.nid = '" . $node->wnid . "' ORDER BY d.sid, c.cid, c.name, d.data");
   return $result;  
 }
 
@@ -78,9 +81,9 @@ function _webform_report_get_body_content($data, $node) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       } // end fields
       // begin data
-      if ($row->data != '0') { // checkbox, not selected
-        if($row->cid == $last_cid && $last_value != 0) { // will comma-separate multiple selections
-          $row->data = ", " . $row->data;
+      if ($row->data != '0' && !empty($last_value)) { // checkbox, not selected
+        if($row->cid == $last_cid) { // will comma-separate multiple selections
+          $row->data .= ", " . $last_value;
         }
         if($row->user == '') {
           $row->user = t('anonymous');
@@ -122,6 +125,7 @@ function _webform_report_get_body_content($data, $node) {
         }
       }
       $last_cid = $row->cid;
+      $last_value = $row->data;
     }
 
     reset($fields); // top
