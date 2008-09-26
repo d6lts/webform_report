@@ -90,7 +90,7 @@ function _webform_report_get_body_content($data, $node) {
       if ($row->data != '0') {
         // This will comma-separate multiple selections from the same group of checkboxes in the same submission.
         if ($row->cid == $last_cid && $row->sid == $last_sid) {
-          $row->data .= ", " . $last_value;
+          $row->data .= '<br />' . $last_value;
         }
         // Don't leave the user field blank if no matching user is found.
         if ($row->user == '') {
