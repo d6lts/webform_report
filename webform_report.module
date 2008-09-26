@@ -152,15 +152,16 @@ function webform_report_insert($node) {
  */
 function webform_report_update($node) {
   watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE); // log it
-  // what to update
+  // What to update, based on url arguments.
   switch (arg(2)) {
-    case 'edit': // node data only
+    // Update node data only.
+    case 'edit':
       db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
       drupal_goto('node/' . $node->nid . '/criteria');
       break;
 
-
-    case 'criteria': // report criteria only
+    // Update report criteria only.
+    case 'criteria':
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
                 addslashes(serialize($node->components)));
@@ -240,7 +241,8 @@ function webform_report_criteria_form_validate($form, &$form_state) {
 }
 
 /**
- * Generate a form for specifying report criteria
+ * Generate a form for specifying report criteria.
+ *
  * @param $form_state
  * @return an array of form elements
  */
