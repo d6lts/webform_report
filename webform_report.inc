@@ -69,7 +69,8 @@ function _webform_report_get_data($node) {
  * @return a string of text or a themed table
  */
 function _webform_report_get_body_content($data, $node) {
-  if ($data) {
+  $output = '';
+  if($data) {
     $fields = array(); // webform field names
     $values = array(); // webform field values
     $last_value = 0;
@@ -191,22 +192,25 @@ function _webform_report_get_body_content($data, $node) {
         $sort = SORT_REGULAR;
     }
 
-    // sort the columns and their contents according to specified criteria
-    array_multisort($column[$node->sort_col], (int)$node->sort, $values);
+    if(is_array($column[$node->sort_col])) {
+      // sort the columns and their contents according to specified criteria
+     array_multisort($column[$node->sort_col], (int)$node->sort, $values);
 
-    _webform_report_prepare_report_data(&$fields, &$values, $node); // keep only fields requested in report criteria
+      _webform_report_prepare_report_data(&$fields, &$values, $node); // keep only fields requested in report criteria
 
-    // filter the table values
-    if($node->filter_type != 0) {
-      $values = _webform_report_filter_values($values, $node);
+      // filter the table values
+      if($node->filter_type != 0) {
+        $values = _webform_report_filter_values($values, $node);
+      }
+
+      $values = _webform_report_add_data_links($fields, $values);
+
+      // display number of rows after description
+      $output .= $node->description . " (" . count($values) . " " . t('results') . ")</p>";
+      $output .= _webform_report_pager($fields, $values, $node);
+    } else {
+      $output = "An error occurred. It appears that no criteria have been specified for this report. Please click on the Criteria tab and complete the form.";
     }
-
-    $values = _webform_report_add_data_links($fields, $values);
-
-    // display number of rows after description
-    $output .= " (" . count($values) . " " . t('results') . ")</p>";
-
-    $output .= _webform_report_pager($fields, $values, $node);
   }
   else { // no submitted data
     $output = t('Note: There are no submissions for the selected webform.</b> Either the form
@@ -218,20 +222,22 @@ function _webform_report_get_body_content($data, $node) {
 }
 
 function _webform_report_prepare_report_data(&$fields, &$values, $node) {
-  $new_fields = array();
-  $new_values = array();
-  foreach($fields as $key1 => $field) {
-    if(in_array($key1, $node->components)) {
-      $new_fields[$key1] = $fields[$key1];
-    }
-    foreach($values as $key2 => $value) {
-      if(in_array($value[$key1]['field'], $node->components)) {
-        $new_values[$key2][$key1] = $value[$key1];
+  if(is_array($node->components)) { // don't continue unless this is an array
+    $new_fields = array();
+    $new_values = array();
+    foreach($fields as $key1 => $field) {
+      if(in_array($key1, $node->components)) {
+        $new_fields[$key1] = $fields[$key1];
+      }
+      foreach($values as $key2 => $value) {
+        if(in_array($value[$key1]['field'], $node->components)) {
+          $new_values[$key2][$key1] = $value[$key1];
+        }
       }
     }
+    $fields = $new_fields;
+    $values = $new_values;
   }
-  $fields = $new_fields;
-  $values = $new_values;
 }
 
 /**
@@ -323,9 +329,7 @@ function _webform_report_get_uid_for_user($name) {
 function _webform_report_page() {
   $output = NULL;
   if (user_access('access webform reports')) {
-    $header = array(
-                    t('View'), t('Edit'), t('Delete')
-                    );
+    $header = array(t('View'), t('Edit'), t('Delete'));
 
     $result = db_query("SELECT nid, title FROM {node} WHERE type='webform_report'");
    

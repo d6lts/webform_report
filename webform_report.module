@@ -125,14 +125,13 @@ function webform_report_load($node) {
 function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
   module_load_include('inc', 'webform_report', 'webform_report');
 
-  if (arg(0) == "comment" || $teaser) {
+  if (arg(0) == 'comment' || $teaser) {
     // Do not render the form for comments or on teasers
     return;
   }
 
   $data = _webform_report_get_data($node);
-  $output = "<p>" . $node->description;
-  $output .= _webform_report_get_body_content($data, $node);
+  $output = _webform_report_get_body_content($data, $node);
   $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
   $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
   return $node;
