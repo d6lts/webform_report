@@ -3,7 +3,7 @@
 // $Id$
 
 /**
- * Searches for nodes of type webform and returns their nids and titles
+ * Search for nodes of type webform and returns their nids and titles
  * in an associative array.
  */
 function _webform_report_get_webforms() {
@@ -18,7 +18,7 @@ function _webform_report_get_webforms() {
 }
 
 /**
- * Get webform components
+ * Get webform components.
  *
  * @param nid is the node id of a webform
  * @return an associative array of webform components
@@ -40,7 +40,7 @@ function _webform_report_get_components($nid) {
 
 
 /**
- * Get data for the specified webform
+ * Get data for the specified webform.
  *
  * @param node is the current node object
  * @return a database query result set
@@ -62,7 +62,7 @@ function _webform_report_get_data($node) {
 }
 
 /**
- * Get node body content for the specified webform report
+ * Get node body content for the specified webform report.
  *
  * @param data is a database query result set
  * @param node is the current node object
@@ -103,7 +103,8 @@ function _webform_report_get_body_content($data, $node) {
         $values[$row->sid][-5] = array('data' => '<a href="' . url('node/'. $row->nid . '/submission/' . $row->sid . '/edit') . '">' . t('edit') .   '</a>', 'field' => -5);
         // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
         $values[$row->sid][$row->cid] = array('data' => $row->data, 'field' => $row->cid);
-      } else {
+      }
+      else {
         // This will prevent empty table cells from being omitted by filling them with blanks.
         $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid);
       }
@@ -220,7 +221,8 @@ function _webform_report_get_body_content($data, $node) {
       // Display number of rows after description.
       $output .= $node->description . " (" . count($values) . " " . t('results') . ")</p>";
       $output .= _webform_report_pager($fields, $values, $node);
-    } else {
+    }
+    else {
       $output = t('It appears that no criteria have been specified for this report. Please click on the Criteria tab to add webform data to your report.');
     }
   }
@@ -237,6 +239,7 @@ function _webform_report_get_body_content($data, $node) {
 /**
  * Rebuild result table fields and values arrays to match
  * report criteria.
+ *
  * @param fields is a reference to an array of table fields
  * @param values is a reference to an array of table values
  */
@@ -260,7 +263,8 @@ function _webform_report_prepare_report_data(&$fields, &$values, $node) {
 }
 
 /**
- * Add links to relevant data fields
+ * Add links to relevant data fields.
+ *
  * @param fields is an array of table fields
  * @param values is an array of table values
  * @return an array of table values
@@ -273,10 +277,12 @@ function _webform_report_add_data_links($fields, $values) {
 
       if($key1 == -1) {
         $data = '<a href="' . url('user/' . _webform_report_get_uid_for_user($data)) . '">' . $data . '</a>';
-      } else {
+      }
+      else {
         if(valid_email_address($data)) {
           $data = '<a href="mailto:' . $data . '">' . $data . '</a>';
-        } else {
+        }
+        else {
           if(valid_url($data, TRUE)) {
             $data = '<a href="' . $data . '">' . $data . '</a>';
           }
@@ -285,42 +291,51 @@ function _webform_report_add_data_links($fields, $values) {
     }
   }
   return $values;
-} // function _webform_report_add_data_links
+}
 
 /**
- * Filter an array of table values
- * @return a filtered array
+ * Filter an array of table values.
+ *
+ * @param values is an array of table values
+ * @node is the current node object
+ * @return a filtered array of table values
  */
 function _webform_report_filter_values($values, $node) {
   $filtered_values = array();
   foreach($values as $key => $value) {
     switch($node->filter_type) {
-      case 1: // begins with
+      // Begins with x.
+      case 1:
         if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
-      case 2: // does not begin with
+      // Does not begin with x.
+      case 2:
         if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
-      case 3: // contains
+      // Contains x.
+      case 3:
         if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
           $filtered_values[] = $value;
         }
         break;
-      case 4: // does not contain
+      // Does not contain x.
+      case 4:
         if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
           $filtered_values[] = $value;
         }
         break;
-      case 5: // equals
+      // Equals x.
+      case 5:
         if(strtolower(trim($value[$node->kcid]['data'])) == strtolower(trim($node->filter_value))) {
           $filtered_values[] = $value;
         }
         break;
-      case 6: // does not equal
+      // Does not equal x.
+      case 6:
         if(strtolower(trim($value[$node->kcid]['data'])) != strtolower(trim($node->filter_value))) {
           $filtered_values[] = $value;
         }
@@ -332,7 +347,8 @@ function _webform_report_filter_values($values, $node) {
 }
 
 /**
- * Returns the uid corresponding with a valid username
+ * Return the uid corresponding with a valid username.
+ *
  * @param a string consisting of a valid username
  * @return a uid for the specified user
  */
@@ -340,10 +356,11 @@ function _webform_report_get_uid_for_user($name) {
   $result = db_query("SELECT uid FROM users WHERE name = '" . $name . "'");
   $user = db_fetch_object($result);
   return $user->uid;
-} // function webform_report_get_uid_for_user
+}
 
 /**
- * Display a list of webform reports in the admin area
+ * Display a list of webform reports in the admin area.
+ *
  * @return a themed table
  */
 function _webform_report_page() {
@@ -367,20 +384,22 @@ function _webform_report_page() {
 }
 
 /**
- * Paginate the webform report
+ * Paginate the webform report.
+ *
  * @return a themed table with page links
  */
 function _webform_report_pager($fields, $values, $node) {
-  // for backward compatibility
+  // For backward compatibility to earlier versions.
   if(!$node->results_per_page) {
     $results_per_page = 20;
-  } else {
+  }
+  else {
     $results_per_page = $node->results_per_page;
   }
   // Add the css file for form display.
   drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');
 
-  // break the array into chunks for pagination 
+  // Break the array into chunks for pagination.
   $pages = array_chunk($values, $results_per_page, TRUE); 
   if(!$_GET['page']) {
     $_GET['page'] = '1';
@@ -410,7 +429,8 @@ function _webform_report_pager($fields, $values, $node) {
     }
     if($css_class == 'pager-current') {
       $output .= '<strong class="' . $css_class . '">' . ($key + 1) . '</strong>';
-    } else {
+    }
+    else {
       $output .= '<a class="' . $css_class . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
     }
   }
