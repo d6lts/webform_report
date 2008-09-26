@@ -70,7 +70,7 @@ function _webform_report_get_data($node) {
  */
 function _webform_report_get_body_content($data, $node) {
   $output = '';
-  if($data) {
+  if ($data) {
     $fields = array();
     $values = array();
     $last_value = 0;
@@ -82,18 +82,18 @@ function _webform_report_get_body_content($data, $node) {
     $fields[-4] = array('data' => t('IP Address'), 'field' => -4, 'sort' => $_GET['sort']);
     $fields[-5] = array('data' => t('Edit'), 'field' => -5, 'sort' => $_GET['sort']);
     while ($row = db_fetch_object($data)) {
-      if(!isset($fields[$row->cid])) {
+      if (!isset($fields[$row->cid])) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
       }
       // Begin data.
       // The value '0' means that a group of checkboxes has no selection.
       if ($row->data != '0' && !empty($last_value)) {
         // This will comma-separate multiple selections from the same group of checkboxes.
-        if($row->cid == $last_cid) {
+        if ($row->cid == $last_cid) {
           $row->data .= ", " . $last_value;
         }
         // Don't leave the user field blank if no matching user is found.
-        if($row->user == '') {
+        if ($row->user == '') {
           $row->user = t('Anonymous');
         }
         $values[$row->sid][-1] = array('data' => $row->user, 'field' => -1);
@@ -204,7 +204,7 @@ function _webform_report_get_body_content($data, $node) {
         $sort = SORT_REGULAR;
     }
 
-    if(is_array($column[$node->sort_col])) {
+    if (is_array($column[$node->sort_col])) {
       // Sort the columns and their contents according to specified criteria.
      array_multisort($column[$node->sort_col], (int)$node->sort, $values);
 
@@ -212,7 +212,7 @@ function _webform_report_get_body_content($data, $node) {
       _webform_report_prepare_report_data(&$fields, &$values, $node);
 
       // Filter the table values.
-      if($node->filter_type != 0) {
+      if ($node->filter_type != 0) {
         $values = _webform_report_filter_values($values, $node);
       }
 
@@ -244,15 +244,15 @@ function _webform_report_get_body_content($data, $node) {
  * @param values is a reference to an array of table values
  */
 function _webform_report_prepare_report_data(&$fields, &$values, $node) {
-  if(is_array($node->components)) {
+  if (is_array($node->components)) {
     $report_fields = array();
     $report_values = array();
     foreach($fields as $key1 => $field) {
-      if(in_array($key1, $node->components)) {
+      if (in_array($key1, $node->components)) {
         $report_fields[$key1] = $fields[$key1];
       }
       foreach($values as $key2 => $value) {
-        if(in_array($value[$key1]['field'], $node->components)) {
+        if (in_array($value[$key1]['field'], $node->components)) {
           $report_values[$key2][$key1] = $value[$key1];
         }
       }
@@ -275,15 +275,15 @@ function _webform_report_add_data_links($fields, $values) {
       // This is to shorten access to the data element of the array, for the following statements.
       $data = &$values[$key2][$key1]['data'];
 
-      if($key1 == -1) {
+      if ($key1 == -1) {
         $data = '<a href="' . url('user/' . _webform_report_get_uid_for_user($data)) . '">' . $data . '</a>';
       }
       else {
-        if(valid_email_address($data)) {
+        if (valid_email_address($data)) {
           $data = '<a href="mailto:' . $data . '">' . $data . '</a>';
         }
         else {
-          if(valid_url($data, TRUE)) {
+          if (valid_url($data, TRUE)) {
             $data = '<a href="' . $data . '">' . $data . '</a>';
           }
         }
@@ -306,37 +306,37 @@ function _webform_report_filter_values($values, $node) {
     switch($node->filter_type) {
       // Begins with x.
       case 1:
-        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
+        if (substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
       // Does not begin with x.
       case 2:
-        if(substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
+        if (substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
           $filtered_values[] = $value;
         }
         break;
       // Contains x.
       case 3:
-        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
+        if (strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
           $filtered_values[] = $value;
         }
         break;
       // Does not contain x.
       case 4:
-        if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
+        if (strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
           $filtered_values[] = $value;
         }
         break;
       // Equals x.
       case 5:
-        if(strtolower(trim($value[$node->kcid]['data'])) == strtolower(trim($node->filter_value))) {
+        if (strtolower(trim($value[$node->kcid]['data'])) == strtolower(trim($node->filter_value))) {
           $filtered_values[] = $value;
         }
         break;
       // Does not equal x.
       case 6:
-        if(strtolower(trim($value[$node->kcid]['data'])) != strtolower(trim($node->filter_value))) {
+        if (strtolower(trim($value[$node->kcid]['data'])) != strtolower(trim($node->filter_value))) {
           $filtered_values[] = $value;
         }
         break;
@@ -390,7 +390,7 @@ function _webform_report_page() {
  */
 function _webform_report_pager($fields, $values, $node) {
   // For backward compatibility to earlier versions.
-  if(!$node->results_per_page) {
+  if (!$node->results_per_page) {
     $results_per_page = 20;
   }
   else {
@@ -401,12 +401,12 @@ function _webform_report_pager($fields, $values, $node) {
 
   // Break the array into chunks for pagination.
   $pages = array_chunk($values, $results_per_page, TRUE); 
-  if(!$_GET['page']) {
+  if (!$_GET['page']) {
     $_GET['page'] = '1';
   }
   $output = theme_table($fields, $pages[($_GET['page'] - 1)], array('class' => 'webform_report'));
   $output .= '<div class="pager">';
-  if($_GET['page'] > 1) {
+  if ($_GET['page'] > 1) {
     $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=1">' . t('« first') .'</a>';
     $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
   }
@@ -427,7 +427,7 @@ function _webform_report_pager($fields, $values, $node) {
         $css_class = 'pager-next active';
         break;
     }
-    if($css_class == 'pager-current') {
+    if ($css_class == 'pager-current') {
       $output .= '<strong class="' . $css_class . '">' . ($key + 1) . '</strong>';
     }
     else {
@@ -435,7 +435,7 @@ function _webform_report_pager($fields, $values, $node) {
     }
   }
   $output .= '</span>';
-  if($_GET['page'] < count($pages)) {
+  if ($_GET['page'] < count($pages)) {
     $output .= '<a class="pager-last active" title="' . t('Go to next page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] + 1) . '">' . t('next ›') .'</a>';
     $output .= '<a class="pager-last active" title="' . t('Go to last page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . count($pages) . '">' . t('last »') .'</a>';
   }

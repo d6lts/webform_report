@@ -20,6 +20,7 @@ function webform_report_help($path) {
     case 'admin/modules#description':
       return t('Allows users to create reports from Webform data.');
       break;
+
     case 'node/add#webform_report' :
       return t('A Webform report is a dynamic page that contains Webform data. The data can be sorted by a particular field, and fields can be included/excluded from the report as needed.');
       break;
@@ -41,9 +42,11 @@ function webform_report_access($op, $node, $account) {
     case 'view':
       return user_access('access webform reports', $account);
       break;
+
     case 'create':
       return user_access('create webform reports', $account);
       break;
+
     case 'update':
     case 'delete':
       if ((user_access('edit own webform reports', $account) && ($account->uid == $node->uid)) ||
@@ -160,12 +163,14 @@ function webform_report_update($node) {
       drupal_goto('node/' . $node->nid . '/criteria');
       break;
 
+
     case 'criteria': // report criteria only
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
                 addslashes(serialize($node->components)));
       drupal_goto('node/' . $node->nid);
       break;
+
   }
 }
 
@@ -220,26 +225,20 @@ function webform_report_criteria_form_validate($form, &$form_state) {
     unset($form_state['values']);
     return;
   }
+  else if ($_POST['kcid'] == 0) {
+    form_set_error('kcid', t('You must select a field'));
+    return;
+  }
+  else if ($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
+    form_set_error('filter_value', t('You must specify a filter value'));
+    return;
+  }
+  else if (empty($_POST['components'])) {
+    form_set_error('components', t('You must select at least one field  '));
+    return;
+  }
   else {
-    if ($_POST['kcid'] == 0) {
-      form_set_error('kcid', t('You must select a field'));
-      return;
-    }
-    else {
-      if ($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
-        form_set_error('filter_value', t('You must specify a filter value'));
-        return;
-      }
-      else {
-        if (empty($_POST['components'])) {
-          form_set_error('components', t('You must select at least one field  '));
-          return;
-        }
-        else {
-          webform_report_update(node_load(arg(1))); // update the database
-        }
-      }
-    }        
+    webform_report_update(node_load(arg(1))); // update the database
   }
   $form_state['rebuild'] = TRUE;
 }
@@ -369,7 +368,8 @@ function webform_report_criteria_form($form_state) {
 
   if (empty($node->components)) {
     $default = ' Next > ';
-  } else {
+  }
+  else {
     $default = ' Save ';
   }
   $form['submit'] = array(
