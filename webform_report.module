@@ -102,13 +102,14 @@ function webform_report_node_info() {
  */
 function webform_report_load($node) {
   $additions = NULL;
-  // populate webform_report-specific node variables only if no new data has been submitted
+  // Populate webform_report-specific node variables only if no new data has been submitted via a form.
   if (!isset($_POST['wnid'])) {
     $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
                                            FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
-    // unserialize webform components array
+    // Slashes must be removed from serialized data before unserializing.
     $additions->components = unserialize(stripslashes($additions->components));
-    $additions->sort_col = $additions->kcid; // end user table column sort value
+    // Table column sort value.
+    $additions->sort_col = $additions->kcid;
   }
   else if ($_POST['wnid'] != 0) {
     $additions->wnid = $_POST['wnid'];
@@ -128,11 +129,6 @@ function webform_report_load($node) {
  */
 function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
   module_load_include('inc', 'webform_report', 'webform_report');
-
-  if (arg(0) == 'comment' || $teaser) {
-    // Do not render the form for comments or on teasers
-    return;
-  }
 
   $data = _webform_report_get_data($node);
   $output = _webform_report_get_body_content($data, $node);
