@@ -4,7 +4,7 @@
 
 /**
  * Searches for nodes of type webform and returns their nids and titles
- * in an associative array
+ * in an associative array.
  */
 function _webform_report_get_webforms() {
   $webforms = array();
@@ -15,14 +15,12 @@ function _webform_report_get_webforms() {
     $webforms[$webform_report->nid] = t($webform_report->title);
   }
   return $webforms;
-} // end function _webform_report_get_webforms()
+}
 
 /**
  * Get webform components
  *
  * @param nid is the node id of a webform
- * @param default (optional) is the first item in the returned array,
- *   for use with form components
  * @return an associative array of webform components
  */
 function _webform_report_get_components($nid) {
@@ -44,7 +42,7 @@ function _webform_report_get_components($nid) {
 /**
  * Get data for the specified webform
  *
- * @param node is an object of type node
+ * @param node is the current node object
  * @return a database query result set
  */
 function _webform_report_get_data($node) {
@@ -62,6 +60,7 @@ function _webform_report_get_data($node) {
     ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data
   ");
 }
+
 /**
  * Get node body content for the specified webform report
  *
@@ -72,47 +71,51 @@ function _webform_report_get_data($node) {
 function _webform_report_get_body_content($data, $node) {
   $output = '';
   if($data) {
-    $fields = array(); // webform field names
-    $values = array(); // webform field values
+    $fields = array();
+    $values = array();
     $last_value = 0;
 
-    // system fields
+    // Begin fields.
     $fields[-1] = array('data' => t('User'), 'field' => -1, 'sort' => $_GET['sort']);
     $fields[-2] = array('data' => t('Date'), 'field' => -2, 'sort' => $_GET['sort']);
     $fields[-3] = array('data' => t('Time'), 'field' => -3, 'sort' => $_GET['sort']);
     $fields[-4] = array('data' => t('IP Address'), 'field' => -4, 'sort' => $_GET['sort']);
     $fields[-5] = array('data' => t('Edit'), 'field' => -5, 'sort' => $_GET['sort']);
-    // begin fields
     while ($row = db_fetch_object($data)) {
       if(!isset($fields[$row->cid])) {
         $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
-      } // end fields
-      // begin data
-      if ($row->data != '0' && !empty($last_value)) { // checkbox, not selected
-        if($row->cid == $last_cid) { // will comma-separate multiple selections
+      }
+      // Begin data.
+      // The value '0' means that a group of checkboxes has no selection.
+      if ($row->data != '0' && !empty($last_value)) {
+        // This will comma-separate multiple selections from the same group of checkboxes.
+        if($row->cid == $last_cid) {
           $row->data .= ", " . $last_value;
         }
+        // Don't leave the user field blank if no matching user is found.
         if($row->user == '') {
-          $row->user = t('anonymous');
+          $row->user = t('Anonymous');
         }
         $values[$row->sid][-1] = array('data' => $row->user, 'field' => -1);
         $values[$row->sid][-2] = array('data' => date('Y-m-d', $row->submitted), 'field' => -2);
         $values[$row->sid][-3] = array('data' => date('H:s', $row->submitted), 'field' => -3);
         $values[$row->sid][-4] = array('data' => $row->remote_addr, 'field' => -4);
         $values[$row->sid][-5] = array('data' => '<a href="' . url('node/'. $row->nid . '/submission/' . $row->sid . '/edit') . '">' . t('edit') .   '</a>', 'field' => -5);
-        $values[$row->sid][$row->cid] = array('data' => $row->data, 'field' => $row->cid); // preserve component id
+        // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
+        $values[$row->sid][$row->cid] = array('data' => $row->data, 'field' => $row->cid);
       } else {
-        $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid); // prevents the table cell from being omitted
+        // This will prevent empty table cells from being omitted by filling them with blanks.
+        $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid);
       }
 
-      // override the report's sort column with the table sort column, if applicable
+      // Override the report's sort column with the table sort column, if selected.
       if (isset($_GET['order'])) {
         if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
           $node->sort_col = $row->cid;
         }
       }
       else {
-        // no table sort link has been clicked yet
+        // If 'order' is not specified, then no table sort link has been clicked yet.
         switch($node->kcid) {
           case -1:
             $_GET['order'] = t('User');
@@ -127,7 +130,8 @@ function _webform_report_get_body_content($data, $node) {
             $_GET['order'] = t('IP Address');
             break;
           case $row->cid:
-            $_GET['order'] = $row->name; // make the sort arrow marker appear in the table column header
+            // Make the sort arrow marker appear in the corresponding table column header.
+            $_GET['order'] = $row->name;
             break;
         }
       }
@@ -135,13 +139,14 @@ function _webform_report_get_body_content($data, $node) {
       $last_value = $row->data;
     }
 
-    reset($fields); // top
+    // Go to first element of the fields array.
+    reset($fields);
 
-    // get an array of columns for sorting
+    // Construct an array of columns for sorting.
     $column = array();
     foreach ($fields as $key1 => $field) {
       foreach ($values as $key2 => $value) {
-        // make sort order case-insensitive and remove spaces (and accents if accents module installed)
+        // Make sort order case-insensitive and remove spaces (and accents if accents module installed).
         if (module_exists('accents')) {
           $column[$key1][$key2] = trim(strtolower(accents_search_preprocess($value[$key1]['data'])));
         }
@@ -151,69 +156,76 @@ function _webform_report_get_body_content($data, $node) {
       }
     }
 
-    // override the report's sort order with the table sort order, if applicable
+    // Override the report's sort order with the table sort order, if selected.
     if (isset($_GET['sort'])) { 
       switch ($_GET['sort']) {
         case 'asc':
           $node->sort = SORT_ASC;
           break;
+
         case 'desc':
           $node->sort = SORT_DESC;
           break;
       }
     }
-    else { // override the table's sort order with the report's
+    else { // Otherwise, do the opposite.
       if ($node->sort == SORT_ASC) {
-        $_GET['sort'] = 'asc'; // default table sort will be ascending
+        $_GET['sort'] = 'asc';
       }
       else {
-        $_GET['sort'] = 'desc'; // default table sort will be descending
+        $_GET['sort'] = 'desc';
       }
     }
 
-    // handle the sorting of optional, non-component fields
+    // Handle the sorting of meta, or non-component fields
     switch($_GET['order']) {
       case t('User'):
         $node->sort_col = -1;
         $sort = SORT_STRING;
         break;
+
       case t('Date'):
         $node->sort_col = -2;
         $sort = SORT_REGULAR;
         break;
+
       case t('Time'):
         $node->sort_col = -3;
         $sort = SORT_REGULAR;
         break;
+
       case t('IP Address'):
         $node->sort_col = -4;
         $sort = SORT_REGULAR;
         break;
+
       default:
         $sort = SORT_REGULAR;
     }
 
     if(is_array($column[$node->sort_col])) {
-      // sort the columns and their contents according to specified criteria
+      // Sort the columns and their contents according to specified criteria.
      array_multisort($column[$node->sort_col], (int)$node->sort, $values);
 
-      _webform_report_prepare_report_data(&$fields, &$values, $node); // keep only fields requested in report criteria
+      // Keep only fields requested in report criteria.
+      _webform_report_prepare_report_data(&$fields, &$values, $node);
 
-      // filter the table values
+      // Filter the table values.
       if($node->filter_type != 0) {
         $values = _webform_report_filter_values($values, $node);
       }
 
       $values = _webform_report_add_data_links($fields, $values);
 
-      // display number of rows after description
+      // Display number of rows after description.
       $output .= $node->description . " (" . count($values) . " " . t('results') . ")</p>";
       $output .= _webform_report_pager($fields, $values, $node);
     } else {
-      $output = "An error occurred. It appears that no criteria have been specified for this report. Please click on the Criteria tab and complete the form.";
+      $output = t('It appears that no criteria have been specified for this report. Please click on the Criteria tab to add webform data to your report.');
     }
   }
-  else { // no submitted data
+  // The selected webform has no submissions.
+  else {
     $output = t('Note: There are no submissions for the selected webform.</b> Either the form
        has not yet been completed by anyone, or the results have been cleared. This will not
        prevent you from creating this report, but this message will be displayed on the report
@@ -222,22 +234,28 @@ function _webform_report_get_body_content($data, $node) {
   return $output;
 }
 
+/**
+ * Rebuild result table fields and values arrays to match
+ * report criteria.
+ * @param fields is a reference to an array of table fields
+ * @param values is a reference to an array of table values
+ */
 function _webform_report_prepare_report_data(&$fields, &$values, $node) {
-  if(is_array($node->components)) { // don't continue unless this is an array
-    $new_fields = array();
-    $new_values = array();
+  if(is_array($node->components)) {
+    $report_fields = array();
+    $report_values = array();
     foreach($fields as $key1 => $field) {
       if(in_array($key1, $node->components)) {
-        $new_fields[$key1] = $fields[$key1];
+        $report_fields[$key1] = $fields[$key1];
       }
       foreach($values as $key2 => $value) {
         if(in_array($value[$key1]['field'], $node->components)) {
-          $new_values[$key2][$key1] = $value[$key1];
+          $report_values[$key2][$key1] = $value[$key1];
         }
       }
     }
-    $fields = $new_fields;
-    $values = $new_values;
+    $fields = $report_fields;
+    $values = $report_values;
   }
 }
 
@@ -250,7 +268,8 @@ function _webform_report_prepare_report_data(&$fields, &$values, $node) {
 function _webform_report_add_data_links($fields, $values) {
   foreach($fields as $key1 => $field) {
     foreach($values as $key2 => $value) {
-      $data = &$values[$key2][$key1]['data']; // shorten access to the data element
+      // This is to shorten access to the data element of the array, for the following statements.
+      $data = &$values[$key2][$key1]['data'];
 
       if($key1 == -1) {
         $data = '<a href="' . url('user/' . _webform_report_get_uid_for_user($data)) . '">' . $data . '</a>';

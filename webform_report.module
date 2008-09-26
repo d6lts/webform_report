@@ -80,7 +80,7 @@ function webform_report_menu() {
 }
 
 /**
- * Implementation of hook_node_info().
+ * Implementation of hook_node_info
  */
 function webform_report_node_info() {
   return array(
@@ -100,13 +100,14 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $additions = NULL;
   // populate webform_report-specific node variables only if no new data has been submitted
-  if(!isset($_POST['wnid'])) {
+  if (!isset($_POST['wnid'])) {
     $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
                                            FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
     // unserialize webform components array
     $additions->components = unserialize(stripslashes($additions->components));
     $additions->sort_col = $additions->kcid; // end user table column sort value
-  } else if($_POST['wnid'] != 0) {
+  }
+  else if ($_POST['wnid'] != 0) {
     $additions->wnid = $_POST['wnid'];
     $additions->kcid = $_POST['kcid'];
     $additions->sort = $_POST['sort'];
@@ -153,13 +154,13 @@ function webform_report_insert($node) {
 function webform_report_update($node) {
   watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE); // log it
   // what to update
-  switch(arg(2)) {
-    case "edit": // node data only
+  switch (arg(2)) {
+    case 'edit': // node data only
       db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
       drupal_goto('node/' . $node->nid . '/criteria');
       break;
-    case "criteria": // report criteria only
-      drupal_set_message('nid = ' . $node->nid . ' and kcid = ' . $node->kcid);
+
+    case 'criteria': // report criteria only
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
                 addslashes(serialize($node->components)));
@@ -218,19 +219,23 @@ function webform_report_criteria_form_validate($form, &$form_state) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
     return;
-  } else {
+  }
+  else {
     if ($_POST['kcid'] == 0) {
       form_set_error('kcid', t('You must select a field'));
       return;
-    } else {
-      if($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
+    }
+    else {
+      if ($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
         form_set_error('filter_value', t('You must specify a filter value'));
         return;
-      } else {
+      }
+      else {
         if (empty($_POST['components'])) {
           form_set_error('components', t('You must select at least one field  '));
           return;
-        } else {
+        }
+        else {
           webform_report_update(node_load(arg(1))); // update the database
         }
       }
@@ -240,7 +245,9 @@ function webform_report_criteria_form_validate($form, &$form_state) {
 }
 
 /**
- * Implementation of 
+ * Generate a form for specifying report criteria
+ * @param $form_state
+ * @return an array of form elements
  */
 function webform_report_criteria_form($form_state) {
   $node = node_load(arg(1));
@@ -258,7 +265,7 @@ function webform_report_criteria_form($form_state) {
   $options = _webform_report_get_webforms();
   $form['wnid'] = array(
     '#type' => 'select',
-    '#title' => t("Webform"),
+    '#title' => t('Webform'),
     '#default_value' => $default,
     '#options' => array(0 => t('Select a Webform')) + $options,
     '#attributes' => array('onchange' => 'this.form.submit()'),
@@ -277,12 +284,12 @@ function webform_report_criteria_form($form_state) {
     }
     $options = $meta_components + _webform_report_get_components($node->wnid);
     $attributes = array();
-    if(empty($node->components)) {
+    if (empty($node->components)) {
       $attributes = array('onchange' => 'this.form.submit()');
     }
     $form['kcid'] = array(
       '#type' => 'select',
-      '#title' => t("Key field"),
+      '#title' => t('Key field'),
       '#default_value' => $default,
       '#options' => array(0 => t('Select a field')) + $options,
       '#attributes' => $attributes,
@@ -296,7 +303,7 @@ function webform_report_criteria_form($form_state) {
     $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
     $form['filter_type'] = array(
       '#type' => 'select',
-      '#title' => t("Filter Type"),
+      '#title' => t('Filter Type'),
       '#options' => $options,
       '#attributes' => array('onchange' => 'this.form.submit()'),
       '#default_value' => $node->filter_type,
@@ -320,7 +327,7 @@ function webform_report_criteria_form($form_state) {
     $options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
     $form['sort'] = array(
       '#type' => 'select',
-      '#title' => t("Sort order"),
+      '#title' => t('Sort order'),
       '#options' => $options,
       '#default_value' => $node->sort,
       '#weight' => 2,
@@ -332,7 +339,7 @@ function webform_report_criteria_form($form_state) {
     $options = $meta_components + _webform_report_get_components($node->wnid) + array(-5 => t('Edit link'));
     $form['components'] = array(
       '#type' => 'checkboxes',
-      '#title' => t("Include components"),
+      '#title' => t('Include components'),
       '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
       '#options' => $options,
       '#default_value' => $node->components,
@@ -360,7 +367,7 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options, $default);
 
-  if(empty($node->components)) {
+  if (empty($node->components)) {
     $default = ' Next > ';
   } else {
     $default = ' Save ';
