@@ -15,7 +15,7 @@ function webform_report_schema() {
     'fields' => array(
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
-      'kcid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'kcid' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'description' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),
       'sort' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 4, 'size' => 'small'),
       'components' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),

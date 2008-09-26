@@ -155,10 +155,11 @@ function webform_report_update($node) {
   // what to update
   switch(arg(2)) {
     case "edit": // node data only
-      db_query("UPDATE webform_report SET description = '%s'", $node->description);
+      db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
       drupal_goto('node/' . $node->nid . '/criteria');
       break;
     case "criteria": // report criteria only
+      drupal_set_message('nid = ' . $node->nid . ' and kcid = ' . $node->kcid);
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
                 addslashes(serialize($node->components)));
@@ -216,22 +217,18 @@ function webform_report_criteria_form_validate($form, &$form_state) {
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
-    $form_state['rebuild'] = TRUE; // update the input form
     return;
   } else {
     if ($_POST['kcid'] == 0) {
       form_set_error('kcid', t('You must select a field'));
-      $form_state['rebuild'] = TRUE;
       return;
     } else {
       if($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
         form_set_error('filter_value', t('You must specify a filter value'));
-        $form_state['rebuild'] = TRUE;
         return;
       } else {
         if (empty($_POST['components'])) {
           form_set_error('components', t('You must select at least one field  '));
-          $form_state['rebuild'] = TRUE;
           return;
         } else {
           webform_report_update(node_load(arg(1))); // update the database
@@ -239,6 +236,7 @@ function webform_report_criteria_form_validate($form, &$form_state) {
       }
     }        
   }
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
