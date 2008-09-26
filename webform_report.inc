@@ -87,9 +87,9 @@ function _webform_report_get_body_content($data, $node) {
       }
       // Begin data.
       // The value '0' means that a group of checkboxes has no selection.
-      if ($row->data != '0' && !empty($last_value)) {
-        // This will comma-separate multiple selections from the same group of checkboxes.
-        if ($row->cid == $last_cid) {
+      if ($row->data != '0') {
+        // This will comma-separate multiple selections from the same group of checkboxes in the same submission.
+        if ($row->cid == $last_cid && $row->sid == $last_sid) {
           $row->data .= ", " . $last_value;
         }
         // Don't leave the user field blank if no matching user is found.
@@ -136,6 +136,7 @@ function _webform_report_get_body_content($data, $node) {
             break;
         }
       }
+      $last_sid = $row->sid;
       $last_cid = $row->cid;
       $last_value = $row->data;
     }
