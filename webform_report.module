@@ -359,6 +359,12 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options);
 
+  if(is_array($node->components)) {
+    $default = $node->components;
+  }
+  else {
+    $default = array();
+  }
   if (!empty($node->kcid)) {
     $options = $meta_components + _webform_report_get_components($node->wnid) + array(-5 => t('Edit link'));
     $form['components'] = array(
@@ -366,12 +372,12 @@ function webform_report_criteria_form($form_state) {
       '#title' => t('Include components'),
       '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
       '#options' => $options,
-      '#default_value' => $node->components,
+      '#default_value' => $default,
       '#required' => TRUE,
       '#weight' => 5,
     );
   }
-  unset($options);
+  unset($default, $options);
 
   if (!empty($node->kcid)) {
     if (isset($node->results_per_page)) {
