@@ -140,6 +140,7 @@ function webform_report_load($node) {
     $additions->wnid = $_POST['wnid'];
     $additions->kcid = $_POST['kcid'];
     $additions->sort = $_POST['sort'];
+    $additions->sort_col = $_POST['sort_col'];
     $additions->filter_type = $_POST['filter_type'];
     $additions->filter_value = $_POST['filter_value'];
     $additions->description = $_POST['description'];
@@ -234,9 +235,6 @@ function webform_report_form(&$node, $form_state) {
  * Implementation of hook_validate
  */
 function webform_report_criteria_form_update($form, &$form_state) {
-  if(empty($_POST['edit-submit'])) {
-    drupal_set_message("not submitted");
-  }
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);

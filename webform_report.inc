@@ -207,7 +207,7 @@ function _webform_report_get_body_content($data, $node) {
 
     if (is_array($column[$node->sort_col])) {
       // Sort the columns and their contents according to specified criteria.
-     array_multisort($column[$node->sort_col], (int)$node->sort, $values);
+      array_multisort($column[$node->sort_col], (int)$node->sort, $values);
 
       // Keep only fields requested in report criteria.
       _webform_report_prepare_report_data(&$fields, &$values, $node);
