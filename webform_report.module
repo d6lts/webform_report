@@ -188,7 +188,7 @@ function webform_report_update($node) {
     }
     else {
       db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
-      drupal_goto('node/' . $node->nid . '/criteria');
+      drupal_goto('node/' . $node->nid . '/edit/criteria');
     }
   }
 }
@@ -238,19 +238,15 @@ function webform_report_criteria_form_update($form, &$form_state) {
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
-    return;
   }
   else if ($_POST['kcid'] == 0) {
     form_set_error('kcid', t('You must select a field'));
-    return;
   }
   else if ($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
     form_set_error('filter_value', t('You must specify a filter value'));
-    return;
   }
   else if (empty($_POST['components'])) {
     form_set_error('components', t('You must select at least one field  '));
-    return;
   }
   $form_state['rebuild'] = TRUE;
 }
@@ -291,7 +287,7 @@ function webform_report_criteria_form($form_state) {
   );
   unset($default, $options);
 
-  if (!empty($node->wnid) && $node->wnid != 0) {
+  if (!empty($node->wnid)) {
     if (!empty($node->kcid)) {
       $default = $node->kcid;
     }
@@ -300,9 +296,7 @@ function webform_report_criteria_form($form_state) {
     }
     $options = $meta_components + _webform_report_get_components($node->wnid);
     $attributes = array();
-    if (empty($node->components)) {
-      $attributes = array('onchange' => 'this.form.submit()');
-    }
+    $attributes = array('onchange' => 'this.form.submit()');
     $form['kcid'] = array(
       '#type' => 'select',
       '#title' => t('Key field'),
@@ -315,7 +309,7 @@ function webform_report_criteria_form($form_state) {
   }
   unset($default, $options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (!empty($node->kcid)) {
     $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
     $form['filter_type'] = array(
       '#type' => 'select',
@@ -328,18 +322,19 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0 && $node->filter_type != 0) {
+  if (!empty($node->kcid) && !empty($node->filter_type)) {
     $form['filter_value'] = array(
       '#type' => 'textfield',
       '#title' => t('Filter Value'),
       '#description' => t('Filter the key field using the specified value'),
       '#default_value' => t($node->filter_value),
+      '#attributes' => array('onchange' => 'this.form.submit()'),
       '#required' => TRUE,
       '#weight' => 4
     );
   }
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (!empty($node->kcid)) {
     $options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
     $form['sort'] = array(
       '#type' => 'select',
@@ -351,7 +346,7 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (!empty($node->kcid)) {
     $options = $meta_components + _webform_report_get_components($node->wnid) + array(-5 => t('Edit link'));
     $form['components'] = array(
       '#type' => 'checkboxes',
@@ -365,7 +360,7 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options);
 
-  if (isset($node->kcid) && $node->kcid != 0) {
+  if (!empty($node->kcid)) {
     if (isset($node->results_per_page)) {
       $default = $node->results_per_page;
     }
