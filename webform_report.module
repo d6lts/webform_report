@@ -178,21 +178,17 @@ function webform_report_insert($node) {
 function webform_report_update($node) {
   watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE); // log it
   // What to update, based on url arguments.
-  switch (arg(2)) {
-    // Update node data only.
-    case 'edit':
-      db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
-      drupal_goto('node/' . $node->nid . '/criteria');
-      break;
-
-    // Update report criteria only.
-    case 'criteria':
+  if(arg(2) == "edit") {
+    if(arg(3) == "criteria") {
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
                 addslashes(serialize($node->components)));
       drupal_goto('node/' . $node->nid);
-      break;
-
+    }
+    else {
+      db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
+      drupal_goto('node/' . $node->nid . '/criteria');
+    }
   }
 }
 
@@ -237,7 +233,10 @@ function webform_report_form(&$node, $form_state) {
 /**
  * Implementation of hook_validate
  */
-function webform_report_criteria_form_validate($form, &$form_state) {
+function webform_report_criteria_form_update($form, &$form_state) {
+  if(empty($_POST['edit-submit'])) {
+    drupal_set_message("not submitted");
+  }
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
@@ -255,10 +254,11 @@ function webform_report_criteria_form_validate($form, &$form_state) {
     form_set_error('components', t('You must select at least one field  '));
     return;
   }
-  else {
-    webform_report_update(node_load(arg(1))); // update the database
-  }
   $form_state['rebuild'] = TRUE;
+}
+
+function webform_report_criteria_form_validate($form, &$form_state) {
+  webform_report_update(node_load(arg(1))); // update the database
 }
 
 /**
@@ -385,16 +385,16 @@ function webform_report_criteria_form($form_state) {
   }
   unset($options, $default);
 
-  if (empty($node->components)) {
-    $default = ' Next > ';
-  }
-  else {
-    $default = ' Save ';
-  }
+  $form['update'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#validate' => array('webform_report_criteria_form_update'),
+    '#weight' => 8
+  );
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => $default,
-    '#weight' => 8
+    '#value' => t('Publish'),
+    '#weight' => 9
   );
   unset($default);
  
