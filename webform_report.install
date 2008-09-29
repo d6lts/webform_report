@@ -79,7 +79,8 @@ function webform_report_update_2() {
     $items[] = update_sql("UPDATE {webform_report} SET components = '" . addslashes(serialize($components)) . "' WHERE nid = '" . $options_result->nid . "'");
   }
 
-  $items[] = update_sql("DROP TABLE {webform_report_components}");
+  $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN options");
+  $items[] = update_sql("DROP TABLE {webform_report_component}");
 
   return $items;
 }
