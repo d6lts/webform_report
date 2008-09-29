@@ -64,13 +64,13 @@ function webform_report_menu() {
   $items = array();
 
   $items['admin/content/webform_report'] = array(
-      'title' => t('Webform Reports'),
-      'description' => t('View and edit Webform reports.'),      
-      'page callback' => '_webform_report_page',
-      'access_callback' => 'user_access',
-      'access arguments' => array('access webform reports'),
-      'file' => 'webform_report.inc',
-      'type' => MENU_NORMAL_ITEM
+    'title' => t('Webform Reports'),
+    'description' => t('View and edit Webform reports.'),      
+    'page callback' => '_webform_report_page',
+    'access_callback' => 'user_access',
+    'access arguments' => array('access webform reports'),
+    'file' => 'webform_report.inc',
+    'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/configuration'] = array(
     'title' => 'Configuration',
@@ -234,7 +234,8 @@ function webform_report_form(&$node, $form_state) {
 /**
  * Implementation of hook_validate
  */
-function webform_report_criteria_form_update($form, &$form_state) {
+function webform_report_criteria_form_validate($form, &$form_state) {
+  $retval = FALSE;
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
@@ -248,11 +249,23 @@ function webform_report_criteria_form_update($form, &$form_state) {
   else if (empty($_POST['components'])) {
     form_set_error('components', t('You must select at least one field  '));
   }
+  else {
+    $retval = TRUE;
+  }
   $form_state['rebuild'] = TRUE;
+  return $retval;
 }
 
-function webform_report_criteria_form_validate($form, &$form_state) {
-  webform_report_update(node_load(arg(1))); // update the database
+/**
+ * Validates and saves criteria form data when Publish button is pressed
+ *
+ * @param form is a form object
+ * @param form_state is a form_state object
+ */
+function webform_report_criteria_form_publish($form, &$form_state) {
+  if(webform_report_criteria_form_validate($form, $form_state)) {
+    webform_report_update(node_load(arg(1)));
+  }
 }
 
 /**
@@ -381,12 +394,12 @@ function webform_report_criteria_form($form_state) {
   $form['update'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
-    '#validate' => array('webform_report_criteria_form_update'),
     '#weight' => 8
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Publish'),
+    '#validate' => array('webform_report_criteria_form_publish'),
     '#weight' => 9
   );
   unset($default);
