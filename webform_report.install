@@ -49,7 +49,7 @@ function webform_report_uninstall() {
  * implementation of hook_update
  */
 function webform_report_update_2() {
-  $items[] = update_sql("ALTER TABLE {webform_report} ADD components int(10) NOT NULL default '0'");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL default ''");
 
   $options_results = db_query("SELECT nid, options FROM {webform_report} ORDER BY nid");
   while($options_result = db_fetch_object($options_results)) {
