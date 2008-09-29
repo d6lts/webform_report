@@ -62,6 +62,7 @@ function webform_report_access($op, $node, $account) {
  */
 function webform_report_menu() {
   $items = array();
+
   $items['admin/content/webform_report'] = array(
       'title' => t('Webform Reports'),
       'description' => t('View and edit Webform reports.'),      
@@ -71,15 +72,39 @@ function webform_report_menu() {
       'file' => 'webform_report.inc',
       'type' => MENU_NORMAL_ITEM
   );
-  $items['node/%/criteria'] = array(
-      'title' => t('Criteria'),
-      'page callback' => 'webform_report_form_builder',
-      'access callback' => 'user_access',
-      'access arguments' => array('create webform reports'),
-      'weight' => 3,
-      'type' => MENU_LOCAL_TASK
+  $items['node/%webform_report_menu/edit/configuration'] = array(
+    'title' => 'Configuration',
+    'page callback' => 'node_page_edit',
+    'page arguments' => array(1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'weight' => 1,
+    'type' => MENU_DEFAULT_LOCAL_TASK
+  );
+  $items['node/%webform_report_menu/edit/criteria'] = array(
+    'title' => 'Criteria',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('webform_report_criteria_form', 1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'weight' => 2,
+    'type' => MENU_LOCAL_TASK,
   );
   return $items;
+}
+
+/**
+ * Menu loader callback; Load a webform report node if the given nid is a webform report
+ */
+function webform_report_menu_load($nid) {
+  if (!is_numeric($nid)) {
+    return FALSE;
+  }
+  $node = node_load($nid);
+  if (!isset($node->type) || $node->type != 'webform_report') {
+    return FALSE;
+  }
+  return $node;
 }
 
 /**
@@ -207,10 +232,6 @@ function webform_report_form(&$node, $form_state) {
     '#weight' => -8
   );
   return $form;
-}
-
-function webform_report_form_builder () {
-  return drupal_get_form('webform_report_criteria_form');
 }
 
 /**
