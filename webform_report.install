@@ -7,7 +7,6 @@
 function webform_report_install() {
   // create tables
   drupal_install_schema('webform_report');
-  drupal_install_schema('webform_report_component');
 } // function webform_report_install
 
 function webform_report_schema() {
@@ -48,29 +47,30 @@ function webform_report_uninstall() {
 /**
  * implementation of hook_update
  */
-function webform_report_update_2() {
+function webform_report_update_3() {
   $items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL default ''");
 
   $options_results = db_query("SELECT nid, options FROM {webform_report} ORDER BY nid");
   while($options_result = db_fetch_object($options_results)) {
     $components = array();
     $options = unserialize(stripslashes($options_result->options));
-    if(!empty($options['show_user'])) {
-      $components[] = -1;
+    if(is_array($options)) {
+      if(!empty($options['show_user'])) {
+        $components[] = -1;
+      }
+      if(!empty($options['show_date'])) {
+        $components[] = -2;
+      }
+      if(!empty($options['show_time'])) {
+        $components[] = -3;
+      }
+      if(!empty($options['show_ip'])) {
+        $components[] = -4;
+      }
+      if(!empty($options['show_edit'])) {
+        $components[] = -5;
+      }
     }
-    if(!empty($options['show_date'])) {
-      $components[] = -2;
-    }
-    if(!empty($options['show_time'])) {
-      $components[] = -3;
-    }
-    if(!empty($options['show_ip'])) {
-      $components[] = -4;
-    }
-    if(!empty($options['show_edit'])) {
-      $components[] = -5;
-    }
-
     $components_results = db_query("SELECT nid, cid FROM {webform_report_component} WHERE nid = '" . $options_result->nid . "'");
 
     while($components_result = db_fetch_object($components_results)) {
@@ -82,6 +82,17 @@ function webform_report_update_2() {
   $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN options");
   $items[] = update_sql("DROP TABLE {webform_report_component}");
 
+  return $items;
+}
+
+/**
+ * implementation of hook_update
+ */
+function webform_report_update_2() {
+  $results = db_query("SELECT nid, options FROM {webform_report} ORDER BY nid");
+  while($result = db_fetch_object($results)) {
+    $items[] = update_sql("UPDATE {webform_report} SET options = '" . addslashes(stripslashes($result->options) . "' WHERE nid = '" . $result->nid . "'");
+  }
   return $items;
 }
 
