@@ -37,16 +37,18 @@ function webform_report_perm() {
 /**
  * Implementation of hook_access
  */
-function webform_report_access($op, $node, $account) {
+function webform_report_access($op, $node, $account = NULL) {
+  global $user;
+  if(empty($account)) {
+    $account = $user;
+  }
   switch ($op) {
     case 'view':
       return user_access('access webform reports', $account);
       break;
-
     case 'create':
       return user_access('create webform reports', $account);
       break;
-
     case 'update':
     case 'delete':
       if ((user_access('edit own webform reports', $account) && ($account->uid == $node->uid)) ||
@@ -58,6 +60,34 @@ function webform_report_access($op, $node, $account) {
 }
 
 /**
+ * Implementation of hook_db_rewrite_sql(), to prevent webform_reports from being
+ * displayed on the front page (promoted) while view access to them is denied
+ * the current role. Don't ask, just smile and nod.
+ */
+function webform_report_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
+  switch ($primary_field) {
+    case 'nid':
+      // this query deals with node objects
+      $return = array();
+      if (!user_access('access webform reports')) {
+        if ($primary_table != 'n') {
+          $return['join'] = "LEFT JOIN {node} n ON $primary_table.nid = n.nid";
+        }
+        $return['where'] = "n.type <> 'webform_report'";
+        return $return;
+      }
+      break;
+    case 'tid':
+      // this query deals with taxonomy objects
+      break;
+    case 'vid':
+      // this query deals with vocabulary objects
+      break;
+  }
+}
+
+
+/**
  * Implementation of hook_menu()
  */
 function webform_report_menu() {
@@ -67,8 +97,8 @@ function webform_report_menu() {
     'title' => t('Webform Reports'),
     'description' => t('View and edit Webform reports.'),      
     'page callback' => '_webform_report_page',
-    'access_callback' => 'user_access',
-    'access arguments' => array('access webform reports'),
+    'access_callback' => 'webform_report_access',
+    'access arguments' => array('view'),
     'file' => 'webform_report.inc',
     'type' => MENU_NORMAL_ITEM
   );
@@ -76,8 +106,8 @@ function webform_report_menu() {
     'title' => t('Configuration'),
     'page callback' => 'node_page_edit',
     'page arguments' => array(1),
-    'access callback' => 'node_access',
-    'access arguments' => array('update', 1),
+    'access callback' => 'webform_report_access',
+    'access arguments' => array('update'),
     'weight' => 1,
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
@@ -86,7 +116,7 @@ function webform_report_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
     'access callback' => 'node_access',
-    'access arguments' => array('update', 1),
+    'access arguments' => array('update'),
     'weight' => 2,
     'type' => MENU_LOCAL_TASK,
   );
@@ -101,7 +131,7 @@ function webform_report_menu_load($nid) {
     return FALSE;
   }
   $node = node_load($nid);
-  if (!isset($node->type) || $node->type != 'webform_report') {
+  if (empty($node->type) || $node->type != 'webform_report') {
     return FALSE;
   }
   return $node;
@@ -128,7 +158,7 @@ function webform_report_node_info() {
 function webform_report_load($node) {
   $additions = NULL;
   // Populate webform_report-specific node variables only if no new data has been submitted via a form.
-  if (!isset($_POST['wnid'])) {
+  if (empty($_POST['wnid'])) {
     $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
                                            FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
     // Slashes must be removed from serialized data before unserializing.
@@ -380,7 +410,7 @@ function webform_report_criteria_form($form_state) {
   unset($default, $options);
 
   if (!empty($node->kcid)) {
-    if (isset($node->results_per_page)) {
+    if (!empty($node->results_per_page)) {
       $default = $node->results_per_page;
     }
     else {
