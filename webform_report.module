@@ -155,7 +155,7 @@ function webform_report_load($node) {
         // this array will be appended multiple times, so no pre-existence check
         $webform_report->components[] = $row->cid;
         if (!isset($webform_report->options)) {
-          $webform_report->options = unserialize($row->options);
+          $webform_report->options = unserialize(stripslashes($row->options));
         }
         if (!isset($webform_report->results_per_page)) {
           $webform_report->results_per_page = $row->results_per_page;
@@ -262,7 +262,7 @@ function webform_report_insert($node, $log = TRUE) {
   webform_report_prepare($node);
   db_query("INSERT INTO {webform_report} (nid, wnid, kcid, description, sort, filter_type, filter_value, options, results_per_page)
             VALUES (%d, %d, %d, '%s', %d, '%s', '%s', '%s', %d)", $node->nid, $node->wnid, $node->kcid, $node->description, $node->sort,
-            $node->filter_type, $node->filter_value, serialize($node->options), $node->results_per_page);
+            $node->filter_type, $node->filter_value, addslashes(serialize($node->options)), $node->results_per_page);
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES ('$node->nid', '$cid')");
