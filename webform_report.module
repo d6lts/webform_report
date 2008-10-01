@@ -73,7 +73,7 @@ function webform_report_menu() {
     'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/configuration'] = array(
-    'title' => 'Configuration',
+    'title' => t('Configuration'),
     'page callback' => 'node_page_edit',
     'page arguments' => array(1),
     'access callback' => 'node_access',
@@ -82,7 +82,7 @@ function webform_report_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
   $items['node/%webform_report_menu/edit/criteria'] = array(
-    'title' => 'Criteria',
+    'title' => t('Report Criteria'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
     'access callback' => 'node_access',
