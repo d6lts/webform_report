@@ -91,7 +91,7 @@ function webform_report_update_3() {
 function webform_report_update_2() {
   $results = db_query("SELECT nid, options FROM {webform_report} ORDER BY nid");
   while($result = db_fetch_object($results)) {
-    $items[] = update_sql("UPDATE {webform_report} SET options = '" . addslashes(stripslashes($result->options) . "' WHERE nid = '" . $result->nid . "'");
+    $items[] = update_sql("UPDATE {webform_report} SET options = '" . addslashes(stripslashes($result->options)) . "' WHERE nid = '" . $result->nid . "'");
   }
   return $items;
 }
