@@ -51,10 +51,7 @@ function webform_report_access($op, $node, $account = NULL) {
       break;
     case 'update':
     case 'delete':
-      if ((user_access('edit own webform reports', $account) && ($account->uid == $node->uid)) ||
-        (user_access('edit webform reports', $account))) {
-        return TRUE;
-      }
+      return user_access("edit webforms") || (user_access("edit own webforms") && ($user->uid == $node->uid));
       break;
   }
 }
@@ -201,7 +198,7 @@ function webform_report_insert($node) {
   db_query("INSERT INTO {webform_report} (nid, description)
             VALUES (%d, '%s')", $node->nid, $node->description);
   watchdog('webform_report', 'Webform report "'.$node->title.'" added', WATCHDOG_NOTICE); // log it
-  drupal_goto('node/' . $node->nid . '/criteria');
+  drupal_goto('node/' . $node->nid . '/edit/criteria');
 }
 
 /**
