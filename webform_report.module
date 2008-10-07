@@ -216,7 +216,7 @@ function webform_report_insert($node) {
 function webform_report_update($node) {
   watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE); // log it
   // What to update, based on url arguments.
-  if((arg(2) == "add" && empty($node->wnid)) || arg(2) == "edit") {
+  if((arg(2) == "add" && empty($_POST['wnid']) && empty($node->wnid)) || arg(2) == "edit") {
     if(arg(3) == "criteria") {
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
