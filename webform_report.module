@@ -250,8 +250,8 @@ function webform_report_form(&$node, $form_state) {
     '#title' => t('Webform report'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#weight' => -10);
-
+    '#weight' => -10
+  );
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -319,7 +319,12 @@ function webform_report_criteria_form($form_state) {
 
   module_load_include('inc', 'webform_report', 'webform_report');
 
+  $webforms = _webform_report_get_webforms();
+  $webform_components = _webform_report_get_components($node->wnid);
   $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
+  $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
+  $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
+  $results_per_page_options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
 
   if (!empty($node->wnid)) {
     $default = $node->wnid;
@@ -327,18 +332,17 @@ function webform_report_criteria_form($form_state) {
   else {
     $default = 0;
   }
-  $options = _webform_report_get_webforms();
   $form['wnid'] = array(
     '#type' => 'select',
     '#title' => t('Webform'),
     '#default_value' => $default,
-    '#options' => array(0 => t('Select a Webform')) + $options,
+    '#options' => array(0 => t('Select a Webform')) + $webforms,
     '#attributes' => array('onchange' => 'this.form.submit()'),
     '#required' => TRUE,
     '#weight' => 0,
     '#description' => 'Select a webform to include in the report.'
   );
-  unset($default, $options);
+  unset($default);
 
   if (!empty($node->wnid)) {
     if (!empty($node->kcid)) {
@@ -347,33 +351,28 @@ function webform_report_criteria_form($form_state) {
     else {
       $default = 0;
     }
-    $options = $meta_components + _webform_report_get_components($node->wnid);
-    $attributes = array();
-    $attributes = array('onchange' => 'this.form.submit()');
     $form['kcid'] = array(
       '#type' => 'select',
       '#title' => t('Key field'),
       '#default_value' => $default,
-      '#options' => array(0 => t('Select a field')) + $options,
-      '#attributes' => $attributes,
+      '#options' => array(0 => t('Select a field')) + $meta_components + $webform_components,
+      '#attributes' => array('onchange' => 'this.form.submit()'),
       '#required' => TRUE,
       '#weight' => 1,
     );
   }
-  unset($default, $options);
+  unset($default);
 
   if (!empty($node->kcid)) {
-    $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
     $form['filter_type'] = array(
       '#type' => 'select',
       '#title' => t('Filter Type'),
-      '#options' => $options,
+      '#options' => $filter_options,
       '#attributes' => array('onchange' => 'this.form.submit()'),
       '#default_value' => $node->filter_type,
       '#weight' => 3,
     );
   }
-  unset($options);
 
   if (!empty($node->kcid) && !empty($node->filter_type)) {
     $form['filter_value'] = array(
@@ -388,16 +387,14 @@ function webform_report_criteria_form($form_state) {
   }
 
   if (!empty($node->kcid)) {
-    $options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
     $form['sort'] = array(
       '#type' => 'select',
       '#title' => t('Sort order'),
-      '#options' => $options,
+      '#options' => $sort_options,
       '#default_value' => $node->sort,
       '#weight' => 2,
     );
   }
-  unset($options);
 
   if(is_array($node->components)) {
     $default = $node->components;
@@ -406,18 +403,17 @@ function webform_report_criteria_form($form_state) {
     $default = array();
   }
   if (!empty($node->kcid)) {
-    $options = $meta_components + _webform_report_get_components($node->wnid) + array(-5 => t('Edit link'));
     $form['components'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Include components'),
       '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
-      '#options' => $options,
+      '#options' => $meta_components + $webform_components + array(-5 => t('Edit link')),
       '#default_value' => $default,
       '#required' => TRUE,
       '#weight' => 5,
     );
   }
-  unset($default, $options);
+  unset($default);
 
   if (!empty($node->kcid)) {
     if (!empty($node->results_per_page)) {
@@ -426,16 +422,15 @@ function webform_report_criteria_form($form_state) {
     else {
       $default = 20;
     }
-    $options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
     $form['results_per_page'] = array(
       '#type' => 'select',
       '#title' => t('Results per page'),
-      '#options' => $options,
+      '#options' => $results_per_page_options,
       '#default_value' => $default,
       '#weight' => 6,
     );
   }
-  unset($options, $default);
+  unset($default);
 
   $form['update'] = array(
     '#type' => 'submit',
@@ -448,7 +443,6 @@ function webform_report_criteria_form($form_state) {
     '#validate' => array('webform_report_criteria_form_publish'),
     '#weight' => 9
   );
-  unset($default);
- 
+
   return $form;
 }
