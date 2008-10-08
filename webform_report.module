@@ -208,6 +208,7 @@ function webform_report_prepare(&$node) {
   }
   if (!isset($node->options)) {
     $node->options['show_date'] = $_POST['show_date'];
+    $node->options['show_time'] = $_POST['show_time'];
     $node->options['show_user'] = $_POST['show_user'];
     $node->options['show_ip'] = $_POST['show_ip'];
     $node->options['show_edit'] = $_POST['show_edit'];
