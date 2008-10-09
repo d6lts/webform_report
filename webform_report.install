@@ -55,7 +55,7 @@ function webform_report_update_3() {
       $items[] = update_sql("ALTER TABLE {webform_report} CHANGE COLUMN kcid old_kcid int(10) unsigned NOT NULL default '0'");
       break;
     case 'pgsql':
-      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN kcid RENAME TO kcid_old");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN kcid RENAME TO old_kcid");
       break;
   }
   $items[] = update_sql("ALTER TABLE {webform_report} ADD kcid int NOT NULL default '0'");

@@ -8,11 +8,10 @@
  */
 function _webform_report_get_webforms() {
   $webforms = array();
-  $result = db_query("SELECT nid FROM {node} WHERE type = 'webform'");
+  $result = db_query("SELECT nid, title FROM {node} WHERE type = 'webform'");
 
   while ($row = db_fetch_object($result)) {
-    $webform_report = node_load($row->nid); // load the current version of this node
-    $webforms[$webform_report->nid] = t($webform_report->title);
+    $webforms[$row->nid] = t($row->title);
   }
   return $webforms;
 }
