@@ -168,8 +168,16 @@ function webform_report_load($node) {
   if (empty($_POST['wnid'])) {
     $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
                                            FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
-    // Slashes must be removed from serialized data before unserializing.
-    $additions->components = unserialize(stripslashes($additions->components));
+
+    // Unpack components (slashes added for MySQL compatibility).
+    $components = unserialize(stripslashes($additions->components));
+    if(is_array($components)) {
+      $additions->components = $components;
+    }
+    else {
+      // This is here because base64_encode had to be used for schema updates since Drupal strips slashes from update queries
+      $additions->components = unserialize(base64_decode($additions->components));
+    }
     // Table column sort value.
     $additions->sort_col = $additions->kcid;
   }
