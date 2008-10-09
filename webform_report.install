@@ -47,21 +47,21 @@ function webform_report_uninstall() {
 /**
  * implementation of hook_update
  */
-function webform_report_update_26() {
+function webform_report_update_3() {
   $items = array();
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-      //$items[] = update_sql("ALTER TABLE {webform_report} CHANGE COLUMN kcid old_kcid int(10) unsigned NOT NULL default '0'");
+      $items[] = update_sql("ALTER TABLE {webform_report} CHANGE COLUMN kcid old_kcid int(10) unsigned NOT NULL default '0'");
       break;
     case 'pgsql':
-      //$items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN kcid RENAME TO kcid_old");
+      $items[] = update_sql("ALTER TABLE {webform_report} ALTER COLUMN kcid RENAME TO kcid_old");
       break;
   }
-  //$items[] = update_sql("ALTER TABLE {webform_report} ADD kcid int NOT NULL default '0'");
-  //$items[] = update_sql("UPDATE {webform_report} SET kcid = old_kcid");
-  //$items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN old_kcid");
-  //$items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL default ''");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD kcid int NOT NULL default '0'");
+  $items[] = update_sql("UPDATE {webform_report} SET kcid = old_kcid");
+  $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN old_kcid");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL default ''");
 
   $option_results = db_query("SELECT nid, options FROM {webform_report}");
   $components = array();
@@ -90,8 +90,8 @@ function webform_report_update_26() {
     $items[] = update_sql("UPDATE {webform_report} SET components = '" . base64_encode(serialize($components)) . "' WHERE nid = '" . $option_result->nid . "'");
   }
 
-  //$items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN options");
-  //$items[] = update_sql("DROP TABLE {webform_report_component}");
+  $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN options");
+  $items[] = update_sql("DROP TABLE {webform_report_component}");
 
   return $items;
 }
