@@ -95,7 +95,8 @@ function webform_report_menu() {
     'title' => t('Webform Reports'),
     'description' => t('View and edit Webform reports.'),      
     'page callback' => '_webform_report_page',
-    'access_callback' => array('access webform_reports'),
+    'access callback' => 'user_access',
+    'access arguments' => array('access webform reports'),
     'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/configuration'] = array(
