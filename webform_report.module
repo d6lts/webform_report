@@ -435,12 +435,14 @@ function webform_report_criteria_form($form_state) {
     '#value' => t('Update'),
     '#weight' => 8
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Publish'),
-    '#validate' => array('webform_report_criteria_form_publish'),
-    '#weight' => 9
-  );
+  if(!form_get_errors()) {
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Publish'),
+      '#validate' => array('webform_report_criteria_form_publish'),
+      '#weight' => 9
+    );
+  }
 
   return $form;
 }
