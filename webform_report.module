@@ -97,6 +97,7 @@ function webform_report_menu() {
     'page callback' => '_webform_report_page',
     'access callback' => 'user_access',
     'access arguments' => array('access webform reports'),
+    'file' => 'webform_report.inc',
     'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/configuration'] = array(
