@@ -100,7 +100,7 @@ function webform_report_menu() {
     'file' => 'webform_report.inc',
     'type' => MENU_NORMAL_ITEM
   );
-  $items['node/%webform_report_menu/edit/configuration'] = array(
+  $items['node/%webform_report_menu/edit/webform_report/configuration'] = array(
     'title' => t('Configuration'),
     'page callback' => 'node_page_edit',
     'page arguments' => array(1),
@@ -109,7 +109,7 @@ function webform_report_menu() {
     'weight' => 1,
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
-  $items['node/%webform_report_menu/edit/criteria'] = array(
+  $items['node/%webform_report_menu/edit/webform_report/criteria'] = array(
     'title' => t('Report Criteria'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
@@ -119,7 +119,7 @@ function webform_report_menu() {
     'type' => MENU_LOCAL_TASK
   );
   // Without this, users with Create, and not Edit, would not be able to complete the Criteria form
-  $items['node/%webform_report_menu/add/criteria'] = array(
+  $items['node/%webform_report_menu/add/webform_report/criteria'] = array(
     'title' => t('Report Criteria'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
@@ -215,7 +215,7 @@ function webform_report_insert($node) {
   db_query("INSERT INTO {webform_report} (nid, description)
             VALUES (%d, '%s')", $node->nid, $node->description);
   watchdog('webform_report', 'Webform report "'.$node->title.'" added', WATCHDOG_NOTICE); // log it
-  drupal_goto('node/' . $node->nid . '/add/criteria');
+  drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
 }
 
 /**
@@ -227,7 +227,7 @@ function webform_report_update($node) {
   $webform_report = db_fetch_object(db_query("SELECT wnid FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
   // What to update, based on url arguments.
   if((arg(2) == 'add' && empty($webform_report->wnid)) || arg(2) == 'edit') {
-    if(arg(3) == 'criteria') {
+    if(arg(4) == 'criteria') {
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
                 $node->filter_value, $node->results_per_page
@@ -236,7 +236,7 @@ function webform_report_update($node) {
     }
     else {
       db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
-      drupal_goto('node/' . $node->nid . '/edit/criteria');
+      drupal_goto('node/' . $node->nid . '/edit/webform_report/criteria');
     }
   }
   else {
