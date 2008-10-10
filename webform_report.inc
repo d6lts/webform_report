@@ -204,6 +204,10 @@ function _webform_report_get_body_content($data, $node) {
         $sort = SORT_REGULAR;
     }
 
+    if(empty($node->sort_col)) {
+      $node->sort_col = $node->kcid;
+    }
+
     if (is_array($column[$node->sort_col])) {
       // Sort the columns and their contents according to specified criteria.
       array_multisort($column[$node->sort_col], (int)$node->sort, $values);

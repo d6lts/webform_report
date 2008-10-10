@@ -95,9 +95,7 @@ function webform_report_menu() {
     'title' => t('Webform Reports'),
     'description' => t('View and edit Webform reports.'),      
     'page callback' => '_webform_report_page',
-    'access_callback' => 'node_access',
-    'access arguments' => array('view'),
-    'file' => 'webform_report.inc',
+    'access_callback' => array('access webform_reports', 'access administration pages'),
     'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/configuration'] = array(
@@ -184,12 +182,12 @@ function webform_report_load($node) {
   else if ($_POST['wnid'] != 0) {
     $additions->wnid = $_POST['wnid'];
     $additions->kcid = $_POST['kcid'];
+    $additions->description = $_POST['description'];
     $additions->sort = $_POST['sort'];
     $additions->sort_col = $_POST['sort_col'];
+    $additions->components = $_POST['components'];
     $additions->filter_type = $_POST['filter_type'];
     $additions->filter_value = $_POST['filter_value'];
-    $additions->description = $_POST['description'];
-    $additions->components = $_POST['components'];
     $additions->results_per_page = $_POST['results_per_page'];
   }
   return $additions;
@@ -223,13 +221,15 @@ function webform_report_insert($node) {
  */
 function webform_report_update($node) {
   watchdog('webform_report', 'Webform report "'.$node->title.'" updated', WATCHDOG_NOTICE); // log it
+  // Check if the webform report has already been submitted, so that update (edit) permission can be enforced
   $webform_report = db_fetch_object(db_query("SELECT wnid FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
   // What to update, based on url arguments.
   if((arg(2) == 'add' && empty($webform_report->wnid)) || arg(2) == 'edit') {
     if(arg(3) == 'criteria') {
-      db_query("UPDATE webform_report SET wnid = %d, kcid = %d, filter_type = %d, filter_value = '%s', components = '%s'
-                WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->filter_type, $node->filter_value,
-                addslashes(serialize($node->components)));
+      db_query("UPDATE webform_report SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
+                WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
+                $node->filter_value, $node->results_per_page
+      );
       drupal_goto('node/' . $node->nid);
     }
     else {
@@ -254,13 +254,6 @@ function webform_report_delete($node) {
  * Implementation of hook_form
  */
 function webform_report_form(&$node, $form_state) {
-  $form = array(
-    '#type' => 'fieldset',
-    '#title' => t('Webform report'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#weight' => -10
-  );
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -284,7 +277,6 @@ function webform_report_form(&$node, $form_state) {
  * Implementation of hook_validate
  */
 function webform_report_criteria_form_validate($form, &$form_state) {
-  $retval = FALSE;
   if ($_POST['wnid'] == 0) {
     form_set_error('wnid', t('You must select a form'));
     unset($form_state['values']);
@@ -298,11 +290,7 @@ function webform_report_criteria_form_validate($form, &$form_state) {
   else if (empty($_POST['components'])) {
     form_set_error('components', t('You must select at least one field  '));
   }
-  else {
-    $retval = TRUE;
-  }
   $form_state['rebuild'] = TRUE;
-  return $retval;
 }
 
 /**
@@ -312,7 +300,8 @@ function webform_report_criteria_form_validate($form, &$form_state) {
  * @param form_state is a form_state object
  */
 function webform_report_criteria_form_publish($form, &$form_state) {
-  if(webform_report_criteria_form_validate($form, $form_state)) {
+  $errors = form_get_errors();
+  if(empty($errors)) {
     webform_report_update(node_load(arg(1)));
   }
 }
