@@ -199,7 +199,7 @@ function webform_report_load($node) {
  * Implementation of hook_view
  */
 function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
-  if(empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
+  if(!empty($node->nid) && empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
     drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
   }
   module_load_include('inc', 'webform_report', 'webform_report');
