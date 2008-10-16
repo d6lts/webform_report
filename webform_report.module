@@ -224,11 +224,8 @@ function webform_report_insert($node) {
  * Implementation of hook_update
  */
 function webform_report_update($node) {
-  global $user;
-  // Check if the webform report has already been submitted, so that update (edit) permission can be enforced
-  $webform_report = db_fetch_object(db_query("SELECT wnid FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
   // What to update, based on url arguments.
-  if((arg(2) == 'add' && empty($webform_report->wnid) && user_access('create webform reports')) || (user_access('edit webform reports') || (user_access('edit own webform reports') && $user->uid == $node->uid)) || arg(2) == 'edit') {
+  if(arg(2) == 'add' | arg(2) == 'edit') {
     if(arg(4) == 'criteria') {
       db_query("UPDATE webform_report SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
@@ -239,9 +236,6 @@ function webform_report_update($node) {
       db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
       watchdog('webform_report', 'Webform report "'.$node->title.'" updated', NULL, WATCHDOG_NOTICE); // log it
     }
-  }
-  else {
-    drupal_set_message(t('You do not have the necessary permissions to edit this information.'));
   }
 }
 
@@ -319,136 +313,145 @@ function webform_report_criteria_form_publish($form, &$form_state) {
  * @return an array of form elements
  */
 function webform_report_criteria_form($form_state) {
+  global $user;
   $node = node_load(arg(1));
-
+  // Check if the webform report has already been submitted, so that edits can be denied to users with only create permission
+  $webform_report = db_fetch_object(db_query("SELECT wnid FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
   module_load_include('inc', 'webform_report', 'webform_report');
 
-  $webforms = _webform_report_get_webforms();
-  $webform_components = _webform_report_get_components($node->wnid);
-  $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
-  $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
-  $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
-  $results_per_page_options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
+  if((arg(2) == 'add' && empty($webform_report->wnid) && user_access('create webform reports')) || (user_access('edit webform reports') || (user_access('edit own webform reports') && $user->uid == $node->uid)) || arg(2) == 'edit') {
 
-  if (!empty($node->wnid)) {
-    $default = $node->wnid;
-  }
-  else {
-    $default = 0;
-  }
-  $form['wnid'] = array(
-    '#type' => 'select',
-    '#title' => t('Webform'),
-    '#default_value' => $default,
-    '#options' => array(0 => t('Select a Webform')) + $webforms,
-    '#attributes' => array('onchange' => 'this.form.submit()'),
-    '#required' => TRUE,
-    '#weight' => 0,
-    '#description' => 'Select a webform to include in the report.'
-  );
-  unset($default);
+    $webforms = _webform_report_get_webforms();
+    $webform_components = _webform_report_get_components($node->wnid);
+    $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
+    $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
+    $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
+    $results_per_page_options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
 
-  if (!empty($node->wnid)) {
-    if (!empty($node->kcid)) {
-      $default = $node->kcid;
+    if (!empty($node->wnid)) {
+      $default = $node->wnid;
     }
     else {
       $default = 0;
     }
-    $form['kcid'] = array(
+    $form['wnid'] = array(
       '#type' => 'select',
-      '#title' => t('Key field'),
+      '#title' => t('Webform'),
       '#default_value' => $default,
-      '#options' => array(0 => t('Select a field')) + $meta_components + $webform_components,
+      '#options' => array(0 => t('Select a Webform')) + $webforms,
       '#attributes' => array('onchange' => 'this.form.submit()'),
       '#required' => TRUE,
-      '#weight' => 1,
+      '#weight' => 0,
+      '#description' => 'Select a webform to include in the report.'
     );
-  }
-  unset($default);
+    unset($default);
 
-  if (!empty($node->kcid)) {
-    $form['filter_type'] = array(
-      '#type' => 'select',
-      '#title' => t('Filter Type'),
-      '#options' => $filter_options,
-      '#attributes' => array('onchange' => 'this.form.submit()'),
-      '#default_value' => $node->filter_type,
-      '#weight' => 3,
-    );
-  }
+    if (!empty($node->wnid)) {
+      if (!empty($node->kcid)) {
+        $default = $node->kcid;
+      }
+      else {
+        $default = 0;
+      }
+      $form['kcid'] = array(
+        '#type' => 'select',
+        '#title' => t('Key field'),
+        '#default_value' => $default,
+        '#options' => array(0 => t('Select a field')) + $meta_components + $webform_components,
+        '#attributes' => array('onchange' => 'this.form.submit()'),
+        '#required' => TRUE,
+        '#weight' => 1,
+      );
+    }
+    unset($default);
 
-  if (!empty($node->kcid) && !empty($node->filter_type)) {
-    $form['filter_value'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Filter Value'),
-      '#description' => t('Filter the key field using the specified value'),
-      '#default_value' => t($node->filter_value),
-      '#attributes' => array('onchange' => 'this.form.submit()'),
-      '#required' => TRUE,
-      '#weight' => 4
-    );
-  }
+    if (!empty($node->kcid)) {
+      $form['filter_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Filter Type'),
+        '#options' => $filter_options,
+        '#attributes' => array('onchange' => 'this.form.submit()'),
+        '#default_value' => $node->filter_type,
+        '#weight' => 3,
+      );
+    }
 
-  if (!empty($node->kcid)) {
-    $form['sort'] = array(
-      '#type' => 'select',
-      '#title' => t('Sort order'),
-      '#options' => $sort_options,
-      '#default_value' => $node->sort,
-      '#weight' => 2,
-    );
-  }
+    if (!empty($node->kcid) && !empty($node->filter_type)) {
+      $form['filter_value'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Filter Value'),
+        '#description' => t('Filter the key field using the specified value'),
+        '#default_value' => t($node->filter_value),
+        '#attributes' => array('onchange' => 'this.form.submit()'),
+        '#required' => TRUE,
+        '#weight' => 4
+      );
+    }
 
-  if(is_array($node->components)) {
-    $default = $node->components;
-  }
-  else {
-    $default = array();
-  }
-  if (!empty($node->kcid)) {
-    $form['components'] = array(
-      '#type' => 'checkboxes',
-      '#title' => t('Include components'),
-      '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
-      '#options' => $meta_components + $webform_components + array(-5 => t('Edit link')),
-      '#default_value' => $default,
-      '#required' => TRUE,
-      '#weight' => 5,
-    );
-  }
-  unset($default);
+    if (!empty($node->kcid)) {
+      $form['sort'] = array(
+        '#type' => 'select',
+        '#title' => t('Sort order'),
+        '#options' => $sort_options,
+        '#default_value' => $node->sort,
+        '#weight' => 2,
+      );
+    }
 
-  if (!empty($node->kcid)) {
-    if (!empty($node->results_per_page)) {
-      $default = $node->results_per_page;
+    if(is_array($node->components)) {
+      $default = $node->components;
     }
     else {
-      $default = 20;
+      $default = array();
     }
-    $form['results_per_page'] = array(
-      '#type' => 'select',
-      '#title' => t('Results per page'),
-      '#options' => $results_per_page_options,
-      '#default_value' => $default,
-      '#weight' => 6,
-    );
-  }
-  unset($default);
+    if (!empty($node->kcid)) {
+      $form['components'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Include components'),
+        '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
+        '#options' => $meta_components + $webform_components + array(-5 => t('Edit link')),
+        '#default_value' => $default,
+        '#required' => TRUE,
+        '#weight' => 5,
+      );
+    }
+    unset($default);
 
-  $form['update'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update'),
-    '#weight' => 8
-  );
-  if(!form_get_errors()) {
-    $form['submit'] = array(
+    if (!empty($node->kcid)) {
+      if (!empty($node->results_per_page)) {
+        $default = $node->results_per_page;
+      }
+      else {
+        $default = 20;
+      }
+      $form['results_per_page'] = array(
+        '#type' => 'select',
+        '#title' => t('Results per page'),
+        '#options' => $results_per_page_options,
+        '#default_value' => $default,
+        '#weight' => 6,
+      );
+    }
+    unset($default);
+
+    $form['update'] = array(
       '#type' => 'submit',
-      '#value' => t('Publish'),
-      '#validate' => array('webform_report_criteria_form_publish'),
-      '#weight' => 9
+      '#value' => t('Update'),
+      '#weight' => 8
     );
+    if(!form_get_errors()) {
+      $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Publish'),
+        '#validate' => array('webform_report_criteria_form_publish'),
+        '#weight' => 9
+      );
+    }
+    $form['#redirect'] = 'node/' . $node->nid;
+    return $form;
   }
-  $form['#redirect'] = 'node/' . $node->nid;
-  return $form;
+  else {
+    drupal_access_denied();
+    exit;
+  }
 }
