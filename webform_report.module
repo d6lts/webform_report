@@ -199,7 +199,7 @@ function webform_report_load($node) {
  * Implementation of hook_view
  */
 function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
-  if(empty($node->wnid) && arg(2) != 'add') {
+  if(empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
     drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
   }
   module_load_include('inc', 'webform_report', 'webform_report');
@@ -245,6 +245,13 @@ function webform_report_update($node) {
 function webform_report_delete($node) {
   db_query("DELETE FROM {webform_report} WHERE nid = '$node->nid'");
   watchdog('webform_report', 'Webform report "'.$node->title.'" deleted', NULL, WATCHDOG_NOTICE); // log it
+}
+
+function webform_report_validate($node, &$form) {
+  // make the delete button redirect properly
+  if($node->op == t('Delete')) {
+    drupal_goto('node/' . $node->nid . '/delete');
+  }
 }
 
 /**
