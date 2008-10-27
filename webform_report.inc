@@ -87,7 +87,7 @@ function _webform_report_get_body_content($data, $node) {
       // The value '0' means that a group of checkboxes has no selection.
       if (!empty($row->data)) {
         // This will comma-separate multiple selections from the same group of checkboxes in the same submission.
-        if ($row->cid == $last_cid && $row->sid == $last_sid) {
+        if ($row->cid == $last_cid && $row->sid == $last_sid && !empty($last_value)) {
           $row->data .= ', ' . $last_value;
         }
         // Don't leave the user field blank if no matching user is found.
