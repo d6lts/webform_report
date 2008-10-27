@@ -52,8 +52,7 @@ function _webform_report_get_data($node) {
     LEFT JOIN {webform_component} c ON d.cid = c.cid
     LEFT JOIN {webform_submissions} s  ON d.sid = s.sid
     LEFT JOIN {users} u ON s.uid = u.uid
-    WHERE d.data != ''
-    AND d.nid = c.nid
+    WHERE d.nid = c.nid
     AND c.nid = s.nid
     AND s.nid = '" . $node->wnid . "'
     ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data
@@ -69,7 +68,7 @@ function _webform_report_get_data($node) {
  */
 function _webform_report_get_body_content($data, $node) {
   $output = '';
-  if ($data) {
+  if (!empty($data)) {
     $fields = array();
     $values = array();
     $last_value = 0;
@@ -86,13 +85,13 @@ function _webform_report_get_body_content($data, $node) {
       }
       // Begin data.
       // The value '0' means that a group of checkboxes has no selection.
-      if ($row->data != '0') {
+      if (!empty($row->data)) {
         // This will comma-separate multiple selections from the same group of checkboxes in the same submission.
         if ($row->cid == $last_cid && $row->sid == $last_sid) {
           $row->data .= ', ' . $last_value;
         }
         // Don't leave the user field blank if no matching user is found.
-        if ($row->user == '') {
+        if (empty($row->user)) {
           $row->user = t('Anonymous');
         }
         $values[$row->sid][-1] = array('data' => $row->user, 'field' => -1);
