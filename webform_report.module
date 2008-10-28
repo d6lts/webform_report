@@ -367,7 +367,7 @@ function webform_report_criteria_form($form_state) {
         '#options' => array(0 => t('Select a field')) + $meta_components + $webform_components,
         '#attributes' => array('onchange' => 'this.form.submit()'),
         '#required' => TRUE,
-        '#weight' => 1,
+        '#weight' => 1
       );
     }
     unset($default);
@@ -379,7 +379,7 @@ function webform_report_criteria_form($form_state) {
         '#options' => $filter_options,
         '#attributes' => array('onchange' => 'this.form.submit()'),
         '#default_value' => $node->filter_type,
-        '#weight' => 3,
+        '#weight' => 3
       );
     }
 
@@ -401,7 +401,7 @@ function webform_report_criteria_form($form_state) {
         '#title' => t('Sort order'),
         '#options' => $sort_options,
         '#default_value' => $node->sort,
-        '#weight' => 2,
+        '#weight' => 2
       );
     }
 
@@ -419,7 +419,7 @@ function webform_report_criteria_form($form_state) {
         '#options' => $meta_components + $webform_components + array(-5 => t('Edit link')),
         '#default_value' => $default,
         '#required' => TRUE,
-        '#weight' => 5,
+        '#weight' => 5
       );
     }
     unset($default);
@@ -436,7 +436,7 @@ function webform_report_criteria_form($form_state) {
         '#title' => t('Results per page'),
         '#options' => $results_per_page_options,
         '#default_value' => $default,
-        '#weight' => 6,
+        '#weight' => 6
       );
     }
     unset($default);
