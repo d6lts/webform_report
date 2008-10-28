@@ -356,7 +356,7 @@ function _webform_report_filter_values($values, $node) {
  * @return a uid for the specified user
  */
 function _webform_report_get_uid_for_user($name) {
-  $result = db_query("SELECT uid FROM users WHERE name = '" . $name . "'");
+  $result = db_query("SELECT uid FROM {users} WHERE name = '" . $name . "'");
   $user = db_fetch_object($result);
   return $user->uid;
 }

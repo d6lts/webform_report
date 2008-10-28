@@ -227,13 +227,13 @@ function webform_report_update($node) {
   // What to update, based on url arguments.
   if(arg(2) == 'add' | arg(2) == 'edit') {
     if(arg(4) == 'criteria') {
-      db_query("UPDATE webform_report SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
+      db_query("UPDATE {webform_report}u SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
                 WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
                 $node->filter_value, $node->results_per_page
       );
     }
     else {
-      db_query("UPDATE webform_report SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
+      db_query("UPDATE {webform_report} SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
       watchdog('webform_report', 'Webform report "'.$node->title.'" updated', NULL, WATCHDOG_NOTICE); // log it
     }
   }
