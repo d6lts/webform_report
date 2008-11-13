@@ -61,14 +61,14 @@ msgstr "このリポートには基準が指定されていないようです。
 
 #: webform_report.inc:234
 msgid ""
-"Note: There are no submissions for the selected webform.</b> Either the form\r\n"
-"       has not yet been completed by anyone, or the results have been cleared. This will not\r\n"
-"       prevent you from creating this report, but this message will be displayed on the report\r\n"
+"Note: There are no submissions for the selected webform.</b> Either the form\n"
+"       has not yet been completed by anyone, or the results have been cleared. This will not\n"
+"       prevent you from creating this report, but this message will be displayed on the report\n"
 "       page until someone submits the selected webform."
 msgstr ""
-"注意: 選択されたWEBフォームには受信内容がありません。</b>\r\n"
-"        フォームの入力を誰も完了していないか、または結果が消去されています。\r\n"
-"        リポートを作成するのに支障はありませんが、選択されたWEBフォームに誰かが送信するまでは\r\n"
+"注意: 選択されたWEBフォームには受信内容がありません。</b>\n"
+"        フォームの入力を誰も完了していないか、または結果が消去されています。\n"
+"        リポートを作成するのに支障はありませんが、選択されたWEBフォームに誰かが送信するまでは\n"
 "        リポートページにこのメッセージが表示されます。"
 
 #: webform_report.inc:372
@@ -86,7 +86,7 @@ msgstr "削除"
 
 #: webform_report.inc:413
 msgid "Go to first page"
-msgstr "先頭のページへ"
+msgstr "先頭ページへ"
 
 #: webform_report.inc:413
 msgid "« first"
@@ -110,11 +110,11 @@ msgstr "次 ›"
 
 #: webform_report.inc:443
 msgid "Go to last page"
-msgstr "最後のページへ"
+msgstr "最終ページへ"
 
 #: webform_report.inc:443
 msgid "last »"
-msgstr "最後 »"
+msgstr "最終 »"
 
 #: webform_report.module:21
 msgid "Allows users to create reports from Webform data."
@@ -146,11 +146,11 @@ msgstr "WEBフォームリポート"
 
 #: webform_report.module:155
 msgid ""
-"A webform report is a dynamic page that contains user-specified data\r\n"
-"      collected by the Webform module. The data can be sorted by a particular field, and fields can\r\n"
+"A webform report is a dynamic page that contains user-specified data\n"
+"      collected by the Webform module. The data can be sorted by a particular field, and fields can\n"
 "      be included/excluded as needed."
 msgstr ""
-"WEBフォームリポートは、Webformモジュールで集めたデータからユーザが選択したものを含む動的ページです。\r\n"
+"WEBフォームリポートは、Webformモジュールで集めたデータからユーザが選択したものを含む動的ページです。\n"
 "特定のフィールドでデータを並び替えしたり、必要に応じてフィールドを付け外すことができます。"
 
 #: webform_report.module:263
@@ -275,7 +275,7 @@ msgstr "更新"
 
 #: webform_report.module:452
 msgid "Publish"
-msgstr "掲載"
+msgstr "掲載する"
 
 #: webform_report.module:34
 msgid "access webform reports"
