@@ -8,7 +8,7 @@
  */
 function _webform_report_get_webforms() {
   $webforms = array();
-  $result = db_query("SELECT nid, title FROM {node} WHERE type = 'webform'");
+  $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} WHERE type = 'webform'"));
 
   while ($row = db_fetch_object($result)) {
     $webforms[$row->nid] = t($row->title);
@@ -24,7 +24,7 @@ function _webform_report_get_webforms() {
  */
 function _webform_report_get_components($nid) {
   $components = array();
-  $result = db_query("SELECT c.cid, c.name FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = '$nid' ORDER BY c.weight");
+  $result = db_query("SELECT c.cid, c.name FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
   
   while ($row = db_fetch_object($result)) {
     $component_name = substr($row->name, 0, 65);
@@ -54,9 +54,8 @@ function _webform_report_get_data($node) {
     LEFT JOIN {users} u ON s.uid = u.uid
     WHERE d.nid = c.nid
     AND c.nid = s.nid
-    AND s.nid = '" . $node->wnid . "'
-    ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data
-  ");
+    AND s.nid = %d
+    ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data", $node->wnid);
 }
 
 /**
@@ -81,7 +80,7 @@ function _webform_report_get_body_content($data, $node) {
     $fields[-5] = array('data' => t('Edit'), 'field' => -5, 'sort' => $_GET['sort']);
     while ($row = db_fetch_object($data)) {
       if (!isset($fields[$row->cid])) {
-        $fields[$row->cid] = array('data' => $row->name, 'field' => $row->cid, 'sort' => $_GET['sort']);
+        $fields[$row->cid] = array('data' => check_plain($row->name), 'field' => $row->cid, 'sort' => $_GET['sort']);
       }
       // Begin data.
       // The value '0' means that a group of checkboxes has no selection.
@@ -98,9 +97,9 @@ function _webform_report_get_body_content($data, $node) {
         $values[$row->sid][-2] = array('data' => date('Y-m-d', $row->submitted), 'field' => -2);
         $values[$row->sid][-3] = array('data' => date('H:s', $row->submitted), 'field' => -3);
         $values[$row->sid][-4] = array('data' => $row->remote_addr, 'field' => -4);
-        $values[$row->sid][-5] = array('data' => '<a href="' . url('node/'. $row->nid . '/submission/' . $row->sid . '/edit') . '">' . t('edit') .   '</a>', 'field' => -5);
+        $values[$row->sid][-5] = array('data' => l('edit', 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'), 'field' => -5);
         // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
-        $values[$row->sid][$row->cid] = array('data' => $row->data, 'field' => $row->cid);
+        $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data), 'field' => $row->cid);
       }
       else {
         // This will prevent empty table cells from being omitted by filling them with blanks.
@@ -212,7 +211,7 @@ function _webform_report_get_body_content($data, $node) {
       array_multisort($column[$node->sort_col], (int)$node->sort, $values);
 
       // Keep only fields requested in report criteria.
-      _webform_report_prepare_report_data(&$fields, &$values, $node);
+      _webform_report_prepare_report_data($fields, $values, $node);
 
       // Filter the table values.
       if ($node->filter_type != 0) {
@@ -222,7 +221,7 @@ function _webform_report_get_body_content($data, $node) {
       $values = _webform_report_add_data_links($fields, $values);
 
       // Display number of rows after description.
-      $output .= $node->description . " (" . count($values) . " " . t('results') . ")</p>";
+      $output .= filter_xss_admin($node->description) . " (" . count($values) . " " . t('results') . ")</p>";
       $output .= _webform_report_pager($fields, $values, $node);
     }
     else {
@@ -279,15 +278,15 @@ function _webform_report_add_data_links($fields, $values) {
       $data = &$values[$key2][$key1]['data'];
 
       if ($key1 == -1) {
-        $data = '<a href="' . url('user/' . _webform_report_get_uid_for_user($data)) . '">' . $data . '</a>';
+        $data = l($data, 'user/' . _webform_report_get_uid_for_user($data));
       }
       else {
         if (valid_email_address($data)) {
-          $data = '<a href="mailto:' . $data . '">' . $data . '</a>';
+          $data = l($data, 'mailto:' . $data);
         }
         else {
           if (valid_url($data, TRUE)) {
-            $data = '<a href="' . $data . '">' . $data . '</a>';
+            $data = l($data, $data);
           }
         }
       }
@@ -356,7 +355,7 @@ function _webform_report_filter_values($values, $node) {
  * @return a uid for the specified user
  */
 function _webform_report_get_uid_for_user($name) {
-  $result = db_query("SELECT uid FROM {users} WHERE name = '" . $name . "'");
+  $result = db_query("SELECT uid FROM {users} WHERE name = '%s'", $name);
   $user = db_fetch_object($result);
   return $user->uid;
 }
@@ -371,7 +370,7 @@ function _webform_report_page() {
   if (user_access('access webform reports')) {
     $header = array(t('View'), t('Edit'), t('Delete'));
 
-    $result = db_query("SELECT nid, title FROM {node} WHERE type='webform_report'");
+    $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} WHERE type='webform_report'"));
    
     while ($node = db_fetch_object($result)) {
       $rows[] = array(l($node->title,'node/' . $node->nid),
@@ -381,7 +380,7 @@ function _webform_report_page() {
     }
   
     $output = theme_table($header, $rows, array('class' => 'webform'));
-    drupal_set_title($node->title);
+    drupal_set_title(check_plain($node->title));
   }
   return $output;
 }
@@ -404,45 +403,31 @@ function _webform_report_pager($fields, $values, $node) {
 
   // Break the array into chunks for pagination.
   $pages = array_chunk($values, $results_per_page, TRUE); 
-  if (!$_GET['page']) {
-    $_GET['page'] = '1';
-  }
-  $output = theme_table($fields, $pages[($_GET['page'] - 1)], array('class' => 'webform_report'));
-  $output .= '<div class="pager">';
-  if ($_GET['page'] > 1) {
-    $output .= '<a class="pager-first active" title="' . t('Go to first page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=1">' . t('« first') .'</a>';
-    $output .= '<a class="pager-first active" title="' . t('Go to previous page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] - 1) . '">' . t('‹ previous') .'</a>';
-  }
-  $output .= '<span class="pager-list">';
-  $css_class = 'pager-next-active';
-  foreach($pages as $key => $page) {
-    switch($_GET['page']) {
-      case($key + 1):
-        $css_class = 'pager-current';
-        break;
-      case(1):
-        $css_class = 'pager-first active';
-        break;
-      case(count($pages)):
-        $css_class = 'pager-last active';
-        break;
-      default:
-        $css_class = 'pager-next active';
-        break;
-    }
-    if ($css_class == 'pager-current') {
-      $output .= '<strong class="' . $css_class . '">' . ($key + 1) . '</strong>';
-    }
-    else {
-      $output .= '<a class="' . $css_class . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' .($key + 1) . '">' . ($key + 1) . '</a>';
-    }
-  }
-  $output .= '</span>';
-  if ($_GET['page'] < count($pages)) {
-    $output .= '<a class="pager-last active" title="' . t('Go to next page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . ($_GET['page'] + 1) . '">' . t('next ›') .'</a>';
-    $output .= '<a class="pager-last active" title="' . t('Go to last page') . '" href="?sort=' . $_GET['sort'] . '&order=' . $_GET['order'] . '&page=' . count($pages) . '">' . t('last »') .'</a>';
-  }
-  $output .= '</div>';
+  
+  // Grab the 'page' query parameter.
+  // Taken from pager_query() in pager.inc
+  $page = isset($_GET['page']) ? $_GET['page'] : '';
+  
+  // Convert comma-separated $page to an array, used by other functions.
+  // Taken from pager_query() in pager.inc
+  $pager_page_array = explode(',', $page);
+    
+  // format the table with the current page
+  if ($page == '') $page = 0;
+  $output = theme_table($fields, $pages[$page], array('class' => 'webform_report'));
+    
+  // Put some magic in the two global variables
+  // Based on code in pager_query() in pager.inc
+  $pager_total[0] = count($pages);
+  $pager_page_array[0] =
+    max(0, min(
+      (int)$pager_page_array[0],
+      ((int)$pager_total[0]) - 1)
+    );
+      
+  // Add the pager to the output.
+  $output .= theme('pager', NULL, $results_per_page, 0);
+
   return $output;
 }
 

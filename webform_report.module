@@ -167,7 +167,7 @@ function webform_report_load($node) {
   // Populate webform_report-specific node variables only if no new data has been submitted via a form.
   if (empty($_POST['wnid'])) {
     $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
-                                           FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
+                                           FROM {webform_report} WHERE nid = %d", $node->nid));
 
     // Unpack components (slashes added for MySQL compatibility).
     $components = unserialize(stripslashes($additions->components));
@@ -217,7 +217,7 @@ function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
 function webform_report_insert($node) {
   db_query("INSERT INTO {webform_report} (nid, description)
             VALUES (%d, '%s')", $node->nid, $node->description);
-  watchdog('webform_report', 'Webform report "'.$node->title.'" added', NULL, WATCHDOG_NOTICE); // log it
+  watchdog('webform_report', 'Webform report @title added', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
 }
 
 /**
@@ -227,14 +227,14 @@ function webform_report_update($node) {
   // What to update, based on url arguments.
   if(arg(2) == 'add' | arg(2) == 'edit') {
     if(arg(4) == 'criteria') {
-      db_query("UPDATE {webform_report}u SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
-                WHERE nid = '" . $node->nid . "'", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
-                $node->filter_value, $node->results_per_page
+      db_query("UPDATE {webform_report} SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
+                WHERE nid = %d", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
+                $node->filter_value, $node->results_per_page, $node->nid
       );
     }
     else {
       db_query("UPDATE {webform_report} SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
-      watchdog('webform_report', 'Webform report "'.$node->title.'" updated', NULL, WATCHDOG_NOTICE); // log it
+      watchdog('webform_report', 'Webform report @title updated', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
     }
   }
 }
@@ -243,8 +243,8 @@ function webform_report_update($node) {
  * Implementation of hook_delete
  */
 function webform_report_delete($node) {
-  db_query("DELETE FROM {webform_report} WHERE nid = '$node->nid'");
-  watchdog('webform_report', 'Webform report "'.$node->title.'" deleted', NULL, WATCHDOG_NOTICE); // log it
+  db_query("DELETE FROM {webform_report} WHERE nid = %d", $node->nid);
+  watchdog('webform_report', 'Webform report @title deleted', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
 }
 
 function webform_report_validate($node, &$form) {
@@ -416,7 +416,7 @@ function webform_report_criteria_form($form_state) {
         '#type' => 'checkboxes',
         '#title' => t('Include components'),
         '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
-        '#options' => $meta_components + $webform_components + array(-5 => t('Edit link')),
+        '#options' => array_map('filter_xss', $meta_components + $webform_components + array(-5 => t('Edit link'))),
         '#default_value' => $default,
         '#required' => TRUE,
         '#weight' => 5
