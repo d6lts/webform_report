@@ -94,12 +94,12 @@ function webform_report_db_rewrite_sql($query, $primary_table, $primary_field, $
 function webform_report_menu($may_cache) {
   $items = array();
   if ($may_cache) {
-    // Webform reports listing 
+    // Webform reports listing
     $items[] = array('path' => 'admin/content/webform_report',
       'title' => t('Webform reports'),
       'callback' => '_webform_report_page',
       'access' => user_access('access webform reports'),
-      'description' => t('View and edit Webform reports.'),      
+      'description' => t('View and edit Webform reports.'),
       'type' => MENU_NORMAL_ITEM);
   }
   return $items;
@@ -187,16 +187,16 @@ function webform_report_prepare(&$node) {
   if (!isset($node->wnid)) {
     $node->wnid = $_POST['wnid'];
   }
-  if (!isset($node->kcid)) { 
+  if (!isset($node->kcid)) {
     $node->kcid = $_POST['kcid'];
   }
-  if (!isset($node->kcid)) { 
+  if (!isset($node->kcid)) {
     $node->sort = $_POST['sort'];
   }
-  if (!isset($node->filter_type)) { 
+  if (!isset($node->filter_type)) {
     $node->filter_type = $_POST['filter_type'];
   }
-  if (!isset($node->filter_value)) { 
+  if (!isset($node->filter_value)) {
     $node->filter_value = $_POST['filter_value'];
   }
   if (!isset($node->description)) {
@@ -251,7 +251,7 @@ function webform_report_validate($node, &$form) {
           form_set_error('components', t('You must select at least one component  '));
         }
       }
-    }        
+    }
   }
 }
 
@@ -266,7 +266,7 @@ function webform_report_insert($node, $log = TRUE) {
   foreach ($node->components as $cid) {
     if($cid != 0) { // omit unselected components
       db_query("INSERT INTO {webform_report_component} (nid, cid) VALUES (%d, %d)", $node->nid, $cid);
-    } 
+    }
   }
   if ($log) {
     watchdog('webform_report', t('Webform report @title added', array('@title' => $node->title)), WATCHDOG_NOTICE);
@@ -453,7 +453,7 @@ function webform_report_form(&$node) {
       '#type' => 'button',
       '#value' => t(' Next > '),
       '#weight' => 8,
-      '#attributes' => array('onclick' => 'this.form.submit()'),      
+      '#attributes' => array('onclick' => 'this.form.submit()'),
     );
   }
 
@@ -490,9 +490,9 @@ function _webform_report_get_components($nid, $default = NULL) {
   else {
     $components = array();
   }
-  
+
   $result = db_query("SELECT c.cid, c.name FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
-  
+
   while ($row = db_fetch_object($result)) {
     $component_name = substr($row->name, 0, 65);
     if (strlen($row->name) > 65) {
@@ -500,7 +500,7 @@ function _webform_report_get_components($nid, $default = NULL) {
     }
     $components[$row->cid] = t($component_name);
   }
-  
+
   return $components;
 }
 
@@ -513,7 +513,7 @@ function _webform_report_get_components($nid, $default = NULL) {
  */
 function _webform_report_get_data($node) {
   $result = NULL;
-  if (is_array($node->components) and count($node->components) > 0) {  
+  if (is_array($node->components) and count($node->components) > 0) {
     // build a subquery for the specified components
     $query = "c.cid = '";
     $count = 0;
@@ -529,14 +529,14 @@ function _webform_report_get_data($node) {
     $result = db_query("SELECT w.nid, c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
                         FROM {webform} w
                         LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid
-                        LEFT JOIN {webform_component} c ON d.cid = c.cid
+                        LEFT JOIN {webform_component} c ON d.cid = c.cid AND d.nid = c.nid
                         LEFT JOIN {webform_submissions} s ON d.sid = s.sid
                         LEFT JOIN {users} u ON s.uid = u.uid
                         WHERE w.nid = %d
                         AND (" . $query . ")
                         ORDER BY d.sid, c.cid, c.name, d.data", $node->wnid);
   }
-  return $result;  
+  return $result;
 }
 
 /**
@@ -645,12 +645,12 @@ function _webform_report_get_body_content($data, $node) {
         }
         else {
           $column[$key1][$key2] = trim(strtolower($value[$key1]['data']));
-        }      
+        }
       }
     }
 
     // override the report's sort order with the table sort order, if applicable
-    if (isset($_GET['sort'])) { 
+    if (isset($_GET['sort'])) {
       switch ($_GET['sort']) {
         case 'asc':
           $node->sort = SORT_ASC;
@@ -688,7 +688,7 @@ function _webform_report_get_body_content($data, $node) {
     }
 
     // sort the columns and their contents according to specified criteria
-    array_multisort($column[$node->kcid], (int)$node->sort, $values);        
+    array_multisort($column[$node->kcid], (int)$node->sort, $values);
 
     // filter the table values
     if($node->filter_type != 0) {
@@ -791,19 +791,19 @@ function _webform_report_page() {
   $output = NULL;
   if (user_access('access webform reports')) {
     $header = array(
-                    t('Title'), 
+                    t('Title'),
                     array('data' => t('View'),
                           'colspan' => '4')
                     );
 
     $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} WHERE type='webform_report'"));
-   
+
     while ($node = db_fetch_object($result)) {
       $rows[] = array(l($node->title,'node/' . $node->nid),
                     l(t('edit'), 'node/'.$node->nid.'/edit'));
 
     }
-  
+
     $output = theme_table($header, $rows, array('class' => 'webform'));
     drupal_set_title(check_plain($node->title));
   }
@@ -828,8 +828,8 @@ function _webform_report_pager($fields, $values, $node) {
   // Add the css file for form display.
   drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');
 
-  // break the array into chunks for pagination 
-  $pages = array_chunk($values, $results_per_page, TRUE); 
+  // break the array into chunks for pagination
+  $pages = array_chunk($values, $results_per_page, TRUE);
 
   // Grab the 'page' query parameter.
   // Taken from pager_query() in pager.inc
@@ -838,11 +838,11 @@ function _webform_report_pager($fields, $values, $node) {
   // Convert comma-separated $page to an array, used by other functions.
   // Taken from pager_query() in pager.inc
   $pager_page_array = explode(',', $page);
-  
+
   // format the table with the current page
   if ($page == '') $page = 0;
   $output = theme_table($fields, $pages[$page], array('class' => 'webform_report'));
-  
+
   // Put some magic in the two global variables
   // Based on code in pager_query() in pager.inc
   $pager_total[0] = count($pages);
@@ -851,9 +851,9 @@ function _webform_report_pager($fields, $values, $node) {
       (int)$pager_page_array[0],
       ((int)$pager_total[0]) - 1)
     );
-    
+
   // Add the pager to the output.
   $output .= theme('pager', NULL, $results_per_page, 0);
-  
+
   return $output;
 }
