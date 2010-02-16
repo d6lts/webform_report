@@ -404,12 +404,16 @@ function webform_report_form(&$node) {
 
   if (isset($node->kcid) && $node->kcid != '0') {
     $options = _webform_report_get_components($node->wnid);
+    $values = $node->components;
+    if (is_array($values)) {
+      $values = array_map('filter_xss', $values);
+    }
     $form['webform_report']['components'] = array(
       '#type' => 'checkboxes',
       '#title' => t("Include components"),
       '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
       '#options' => $options,
-      '#default_value' => array_map('filter_xss', $node->components),
+      '#default_value' => $values,
       '#required' => TRUE,
       '#weight' => 5,
     );
