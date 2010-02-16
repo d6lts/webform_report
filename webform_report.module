@@ -310,7 +310,7 @@ function webform_report_form(&$node) {
     '#type' => 'textfield',
     '#title' => t('Title'),
     '#required' => TRUE,
-    '#default_value' => t($node->title),
+    '#default_value' => $node->title,
     '#weight' => -2,
     '#description' => t('Enter a title for your Webform report page')
   );
@@ -325,7 +325,7 @@ function webform_report_form(&$node) {
     '#type' => 'textarea',
     '#title' => t('Description'),
     '#description' => t('The description will be displayed at the top of the report page'),
-    '#value' => t($value),
+    '#value' => $value,
     '#required' => FALSE,
     '#weight' => -1,
   );
@@ -396,7 +396,7 @@ function webform_report_form(&$node) {
       '#type' => 'textfield',
       '#title' => t('Filter Value'),
       '#description' => t('Filter the key field using the specified value'),
-      '#default_value' => t($node->filter_value),
+      '#default_value' => $node->filter_value,
       '#required' => TRUE,
       '#weight' => 4
     );
