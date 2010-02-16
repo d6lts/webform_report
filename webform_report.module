@@ -93,7 +93,7 @@ function webform_report_menu() {
 
   $items['admin/content/webform_report'] = array(
     'title' => t('Webform Reports'),
-    'description' => t('View and edit Webform reports.'),      
+    'description' => t('View and edit Webform reports.'),
     'page callback' => '_webform_report_page',
     'access callback' => 'user_access',
     'access arguments' => array('access webform reports'),
@@ -227,7 +227,7 @@ function webform_report_update($node) {
   // What to update, based on url arguments.
   if(arg(2) == 'add' | arg(2) == 'edit') {
     if(arg(4) == 'criteria') {
-      db_query("UPDATE {webform_report} SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d 
+      db_query("UPDATE {webform_report} SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d
                 WHERE nid = %d", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
                 $node->filter_value, $node->results_per_page, $node->nid
       );
@@ -262,7 +262,7 @@ function webform_report_form(&$node, $form_state) {
     '#type' => 'textfield',
     '#title' => t('Title'),
     '#required' => TRUE,
-    '#default_value' => t($node->title),
+    '#default_value' => $node->title,
     '#weight' => -9,
     '#description' => t('Enter a title for your Webform report page')
   );
@@ -270,7 +270,7 @@ function webform_report_form(&$node, $form_state) {
     '#type' => 'textarea',
     '#title' => t('Description'),
     '#description' => t('The description will be displayed at the top of the report page'),
-    '#default_value' => t($node->description),
+    '#default_value' => $node->description,
     '#required' => FALSE,
     '#weight' => -8
   );
@@ -388,7 +388,7 @@ function webform_report_criteria_form($form_state) {
         '#type' => 'textfield',
         '#title' => t('Filter Value'),
         '#description' => t('Filter the key field using the specified value'),
-        '#default_value' => t($node->filter_value),
+        '#default_value' => $node->filter_value,
         '#attributes' => array('onchange' => 'this.form.submit()'),
         '#required' => TRUE,
         '#weight' => 4
