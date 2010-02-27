@@ -8,7 +8,7 @@
  */
 function _webform_report_get_webforms() {
   $webforms = array();
-  $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} WHERE type = 'webform'"));
+  $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} n WHERE type = 'webform'"));
 
   while ($row = db_fetch_object($result)) {
     $webforms[$row->nid] = t($row->title);
@@ -370,7 +370,7 @@ function _webform_report_page() {
   if (user_access('access webform reports')) {
     $header = array(t('View'), t('Edit'), t('Delete'));
 
-    $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} WHERE type='webform_report'"));
+    $result = db_query(db_rewrite_sql("SELECT nid, title FROM {node} n WHERE type='webform_report'"));
    
     while ($node = db_fetch_object($result)) {
       $rows[] = array(l($node->title,'node/' . $node->nid),
