@@ -391,6 +391,9 @@ function _webform_report_page() {
  * @return a themed table with page links
  */
 function _webform_report_pager($fields, $values, $node) {
+
+  global $pager_page_array, $pager_total;
+
   // For backward compatibility to earlier versions.
   if (!$node->results_per_page) {
     $results_per_page = 20;
