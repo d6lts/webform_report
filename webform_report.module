@@ -244,7 +244,7 @@ function webform_report_validate($node, &$form) {
     if ($_POST['kcid'] == '') {
       form_set_error('kcid', t('You must select a field'));
     } else {
-      if($_POST['filter_type'] != 0 && $_POST['filter_value'] == '') {
+      if($_POST['filter_type'] != 0 && $_POST['filter_type'] != 5 && $_POST['filter_type'] != 6 && $_POST['filter_value'] == '') {
         form_set_error('filter_value', t('You must specify a filter value'));
       } else {
         if ($_POST['components'] == '') {
@@ -379,7 +379,7 @@ function webform_report_form(&$node) {
   unset($default, $options);
 
   if (isset($node->kcid) && $node->kcid != '0') {
-    $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'));
+    $options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('is empty'), 6 => t('is not empty'));
     $form['webform_report']['filter_type'] = array(
       '#type' => 'select',
       '#title' => t("Filter Type"),
@@ -397,7 +397,7 @@ function webform_report_form(&$node) {
       '#title' => t('Filter Value'),
       '#description' => t('Filter the key field using the specified value'),
       '#default_value' => $node->filter_value,
-      '#required' => TRUE,
+      '#required' => FALSE,
       '#weight' => 4
     );
   }
@@ -767,6 +767,16 @@ function _webform_report_filter_values($values, $node) {
         break;
       case 4: // does not contain
         if(strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
+          $filtered_values[] = $value;
+        }
+        break;
+      case 5: // is empty
+        if(strlen(trim($value[$node->kcid]['data'])) == 0) {
+          $filtered_values[] = $value;
+        }
+        break;
+      case 6: // is not empty
+        if(strlen(trim($value[$node->kcid]['data'])) != 0) {
           $filtered_values[] = $value;
         }
         break;
