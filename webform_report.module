@@ -291,7 +291,7 @@ function webform_report_criteria_form_validate($form, &$form_state) {
   else if ($_POST['kcid'] == 0) {
     form_set_error('kcid', t('You must select a field'));
   }
-  else if ($_POST['filter_type'] != 0 && empty($_POST['filter_value'])) {
+  else if ($_POST['filter_type'] != 0 && $_POST['filter_type'] != 7 && $_POST['filter_type'] != 8 && empty($_POST['filter_value'])) {
     form_set_error('filter_value', t('You must specify a filter value'));
   }
   else if (empty($_POST['components'])) {
@@ -331,7 +331,7 @@ function webform_report_criteria_form($form_state) {
     $webforms = _webform_report_get_webforms();
     $webform_components = _webform_report_get_components($node->wnid);
     $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
-    $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'));
+    $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'), 7 => t('is empty'), 8 => t('is not empty'));
     $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
     $results_per_page_options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
 
@@ -390,7 +390,7 @@ function webform_report_criteria_form($form_state) {
         '#description' => t('Filter the key field using the specified value'),
         '#default_value' => $node->filter_value,
         '#attributes' => array('onchange' => 'this.form.submit()'),
-        '#required' => TRUE,
+        '#required' => FALSE,
         '#weight' => 4
       );
     }

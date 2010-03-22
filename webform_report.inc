@@ -342,6 +342,18 @@ function _webform_report_filter_values($values, $node) {
           $filtered_values[] = $value;
         }
         break;
+      // is empty
+      case 7: 
+        if (strlen(trim($value[$node->kcid]['data'])) == 0) {
+          $filtered_values[] = $value;
+        }
+        break;
+      // is not empty        
+      case 8: 
+        if (strlen(trim($value[$node->kcid]['data'])) != 0) {
+          $filtered_values[] = $value;
+        }
+        break;
     }
   }
 
