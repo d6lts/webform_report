@@ -611,8 +611,22 @@ function _webform_report_get_body_content($data, $node, $formatcsv = FALSE) {
         if ($row->cid == $last_cid && $row->sid == $last_sid && !empty($last_value)) {
           $row->data .= ', ' . $last_value;
         }
-        $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data));
-      } else {
+        // special handling for file uploads
+        if ($row->type == 'file') {
+          $tmp = unserialize($row->data);
+          $link = '&nbsp;';
+          if (!empty($tmp['filename'])) {
+            $link = '<a href="' . base_path() . $tmp['filepath'] . '">' . 
+                    $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
+                    '</a>';
+          }
+          $values[$row->sid][$row->cid] = array('data' => $link);
+        }
+        else {
+          $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data));
+        }
+      } 
+      else {
           if (!$formatcsv) {
             $values[$row->sid][$row->cid] = array('data' => '&nbsp;'); // prevents the table cell from being omitted
           }
