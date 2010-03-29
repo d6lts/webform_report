@@ -67,10 +67,18 @@ function webform_report_db_rewrite_sql($query, $primary_table, $primary_field, $
       // this query deals with node objects
       $return = array();
       if (!user_access('access webform reports')) {
-        if ($primary_table != 'n') {
+        if ($primary_table != 'n' && $primary_table != 'node') {
           $return['join'] = "LEFT JOIN {node} n ON $primary_table.nid = n.nid";
+          $return['where'] = "n.type <> 'webform_report'";
         }
-        $return['where'] = "n.type <> 'webform_report'";
+        else {
+          if ($primary_table == 'n') {
+            $return['where'] = "n.type <> 'webform_report'";
+          }
+          if ($primary_table == 'node') {
+            $return['where'] = "node.type <> 'webform_report'";
+          }
+        }
         return $return;
       }
       break;
