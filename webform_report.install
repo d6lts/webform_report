@@ -15,9 +15,9 @@ function webform_report_schema() {
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'kcid' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-      'description' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),
+      'description' => array('type' => 'text', 'not null' => TRUE),
       'sort' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 4, 'size' => 'small'),
-      'components' => array('type' => 'text', 'not null' => TRUE, 'default' => ''),
+      'components' => array('type' => 'text', 'not null' => TRUE),
       'filter_type' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'size' => 'small'),
       'filter_value' => array('type' => 'varchar', 'not null' => TRUE, 'default' => '', 'length' => 128),
       'results_per_page' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 20, 'size' => 'tiny')
@@ -61,7 +61,7 @@ function webform_report_update_3() {
   $items[] = update_sql("ALTER TABLE {webform_report} ADD kcid int NOT NULL default '0'");
   $items[] = update_sql("UPDATE {webform_report} SET kcid = old_kcid");
   $items[] = update_sql("ALTER TABLE {webform_report} DROP COLUMN old_kcid");
-  $items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL default ''");
+  $items[] = update_sql("ALTER TABLE {webform_report} ADD components text NOT NULL");
 
   $option_results = db_query("SELECT nid, options FROM {webform_report}");
   $components = array();
@@ -118,9 +118,9 @@ function webform_report_update_1() {
         nid int(10) unsigned NOT NULL default '0',
         wnid int(10) unsigned NOT NULL default '0',
         kcid int(10) unsigned NOT NULL default '0',
-        description text NOT NULL default '',
+        description text NOT NULL,
         sort int(2) unsigned NOT NULL default '4',
-        options text NOT NULL default '',
+        options text NOT NULL,
         filter_type int(2) unsigned NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
         results_per_page int(1) unsigned NOT NULL default '20',
@@ -139,9 +139,9 @@ function webform_report_update_1() {
         nid integer NOT NULL default '0',
         wnid integer NOT NULL default '0',
         kcid integer NOT NULL default '0',
-        description text NOT NULL default '',
+        description text NOT NULL,
         sort smallint NOT NULL default '4',
-        options text NOT NULL default '',
+        options text NOT NULL,
         filter_type smallint NOT NULL default '0',
         filter_value varchar(128) NOT NULL default '',
         results_per_page smallint NOT NULL default '20',
