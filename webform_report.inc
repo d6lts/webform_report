@@ -99,8 +99,21 @@ function _webform_report_get_body_content($data, $node, $formatcsv = FALSE) {
         $values[$row->sid][-3] = array('data' => date('H:s', $row->submitted), 'field' => -3);
         $values[$row->sid][-4] = array('data' => $row->remote_addr, 'field' => -4);
         $values[$row->sid][-5] = array('data' => l('edit', 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'), 'field' => -5);
-        // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
-        $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data), 'field' => $row->cid);
+        // special handling for file uploads
+        if ($row->type == 'file') {
+          $tmp = unserialize($row->data);
+          $link = '&nbsp;';
+          if (!empty($tmp['filename'])) {
+            $link = '<a href="' . base_path() . $tmp['filepath'] . '">' . 
+                    $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
+                    '</a>';
+          }
+          $values[$row->sid][$row->cid] = array('data' => $link, 'field' => $row->cid);
+        }
+        else {
+          // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
+          $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data), 'field' => $row->cid);
+        }
       }
       else {
         // This will prevent empty table cells from being omitted by filling them with blanks.
