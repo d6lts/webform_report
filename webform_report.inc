@@ -63,9 +63,10 @@ function _webform_report_get_data($node) {
  *
  * @param data is a database query result set
  * @param node is the current node object
+ * @param formatcsv if TRUE format the output as a CSV file
  * @return a string of text or a themed table
  */
-function _webform_report_get_body_content($data, $node) {
+function _webform_report_get_body_content($data, $node, $formatcsv = FALSE) {
   $output = '';
   if (!empty($data)) {
     $fields = array();
@@ -103,7 +104,9 @@ function _webform_report_get_body_content($data, $node) {
       }
       else {
         // This will prevent empty table cells from being omitted by filling them with blanks.
-        $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid);
+        if (!$formatcsv) {
+          $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid);
+        }
       }
 
       // Override the report's sort column with the table sort column, if selected.
@@ -218,11 +221,18 @@ function _webform_report_get_body_content($data, $node) {
         $values = _webform_report_filter_values($values, $node);
       }
 
-      $values = _webform_report_add_data_links($fields, $values);
-
-      // Display number of rows after description.
-      $output .= filter_xss_admin($node->description) . " (" . count($values) . " " . t('results') . ")</p>";
-      $output .= _webform_report_pager($fields, $values, $node);
+      if ($formatcsv) {
+        // format as csv
+        $output = _webform_report_output_csv($fields, $values);
+      }
+      else {
+        $values = _webform_report_add_data_links($fields, $values);
+        // Display number of rows after description.
+        $output .= filter_xss_admin($node->description) . 
+                   ' (' . count($values) . ' ' . t('results') . ') ' . 
+                   l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
+        $output .= _webform_report_pager($fields, $values, $node);
+      }
     }
     else {
       $output = t('It appears that no criteria have been specified for this report. Please click on the Criteria tab to add webform data to your report.');
@@ -446,4 +456,61 @@ function _webform_report_pager($fields, $values, $node) {
   return $output;
 }
 
+/**
+ * Output a webform report in CSV format
+ */
+function webform_report_csv($node) {
+
+  $data = _webform_report_get_data($node);  
+  $output = _webform_report_get_body_content($data, $node, TRUE);
+      
+  $fname = 'wfr_export.csv';
+  header('Content-Type: text/plain');
+  header('Content-Length: ' . strlen($output));
+  header('Content-Disposition: attachment; filename="' . $fname . '"');
+  echo $output;
+}
+
+/**
+ * Format webform report data as a CSV
+ *
+ * @return CSV output
+ */
+function _webform_report_output_csv($fields, $values) {
+
+  $output = '';
+  $tmp = array();
+  foreach($fields as $cell) {
+    $tmp[] .= _webform_report_format_csv_column($cell['data']);
+  }
+  $output .= implode(',', $tmp) . "\r\n";
+
+  foreach($values as $row) {
+    $tmp = array();
+    foreach($row as $cell) {
+      $tmp[] = _webform_report_format_csv_column($cell['data']);
+    }
+    $output .= implode(',', $tmp) . "\r\n";
+  }
+
+  return $output;
+}
+
+/**
+ * Format a CSV column value
+ *
+ * @return CSV column
+ */
+function _webform_report_format_csv_column($value) {
+
+    // if value contains a comma, it should be delimited by quotes
+    if (strpos($value, ',')) {
+        // if value contains quotes, double the quotes
+        if (strpos($value, '"'))
+            return '"' . str_replace('"', '""', $value) . '"';
+        else
+            return '"' . $value . '"';
+    }
+    return $value;
+}
 ?>

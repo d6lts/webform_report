@@ -127,6 +127,15 @@ function webform_report_menu() {
     'access arguments' => array('create', 1, $user),
     'type' => MENU_CALLBACK
   );
+  $items['node/%webform_report_menu/csv'] = array(
+    'title' => t('Report CSV Export'),
+    'page callback' => 'webform_report_csv',
+    'page arguments' => array(1),
+    'access callback' => 'webform_report_access',
+    'access arguments' => array('view', 1, $user),
+    'file' => 'webform_report.inc',
+    'type' => MENU_CALLBACK
+  );
   return $items;
 }
 
