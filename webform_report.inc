@@ -430,17 +430,20 @@ function _webform_report_pager($fields, $values, $node) {
   global $pager_page_array, $pager_total;
 
   // For backward compatibility to earlier versions.
-  if (!$node->results_per_page) {
-    $results_per_page = 20;
-  }
-  else {
+  $results_per_page = 20;
+  if (!$node->results_per_page || $node->results_per_page == 0) {
     $results_per_page = $node->results_per_page;
   }
   // Add the css file for form display.
   drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');
 
   // Break the array into chunks for pagination.
-  $pages = array_chunk($values, $results_per_page, TRUE); 
+  if ($results_per_page) {
+    $pages = array_chunk($values, $results_per_page, TRUE); 
+  }
+  else {
+    $pages[0] = $values;
+  }
   
   // Grab the 'page' query parameter.
   // Taken from pager_query() in pager.inc

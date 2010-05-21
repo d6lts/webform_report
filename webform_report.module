@@ -350,7 +350,7 @@ function webform_report_criteria_form($form_state) {
     $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
     $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'), 7 => t('is empty'), 8 => t('is not empty'));
     $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
-    $results_per_page_options = array(20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
+    $results_per_page_options = array(0 => 'All', 20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
 
     if (!empty($node->wnid)) {
       $default = $node->wnid;
@@ -442,7 +442,7 @@ function webform_report_criteria_form($form_state) {
     unset($default);
 
     if (!empty($node->kcid)) {
-      if (!empty($node->results_per_page)) {
+      if (arg(2) != 'add' && (!empty($node->results_per_page) || $node->results_per_page==0)) {
         $default = $node->results_per_page;
       }
       else {
