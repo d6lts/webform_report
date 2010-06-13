@@ -123,17 +123,9 @@ function webform_report_menu() {
     'page arguments' => array('webform_report_criteria_form', 1),
     'access callback' => 'webform_report_access',
     'access arguments' => array('update', 1, $user),
+    'file' => 'webform_report_criteria.inc',
     'weight' => 2,
     'type' => MENU_LOCAL_TASK
-  );
-  // Without this, users with Create, and not Edit, would not be able to complete the Criteria form
-  $items['node/%webform_report_menu/add/webform_report/criteria'] = array(
-    'title' => t('Report Criteria'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('webform_report_criteria_form', 1),
-    'access callback' => 'webform_report_access',
-    'access arguments' => array('create', 1, $user),
-    'type' => MENU_CALLBACK
   );
   $items['node/%webform_report_menu/csv'] = array(
     'title' => t('Report CSV Export'),
@@ -177,38 +169,36 @@ function webform_report_node_info() {
 }
 
 /**
+ * Implementation of hook_theme().
+ */
+function webform_report_theme() {
+  
+  $theme = array(
+    'webform_report_criteria_form' => array(
+      'arguments' => array('form' => NULL),
+    )
+  );
+  
+  return $theme;
+}
+
+
+/**
  * Implementation of hook_load
  */
 function webform_report_load($node) {
-  $additions = NULL;
-  // Populate webform_report-specific node variables only if no new data has been submitted via a form.
-  if (empty($_POST['wnid'])) {
-    $additions = db_fetch_object(db_query("SELECT wnid, kcid, description, sort, filter_type, filter_value, results_per_page, components
-                                           FROM {webform_report} WHERE nid = %d", $node->nid));
 
-    // Unpack components (slashes added for MySQL compatibility).
-    $components = unserialize(stripslashes($additions->components));
-    if(is_array($components)) {
-      $additions->components = $components;
-    }
-    else {
-      // This is here because base64_encode had to be used for schema updates since Drupal strips slashes from update queries
-      $additions->components = unserialize(base64_decode($additions->components));
-    }
-    // Table column sort value.
-    $additions->sort_col = $additions->kcid;
+  // Populate webform_report-specific node variables
+  $additions = db_fetch_object(db_query("SELECT wnid, description, columns, sorton, filters, options
+                                         FROM {webform_report} WHERE nid = %d", $node->nid));
+
+  if (is_object($additions)) {
+    $additions->columns = unserialize($additions->columns);
+    $additions->sorton = unserialize($additions->sorton);
+    $additions->filters = unserialize($additions->filters);
+    $additions->options = unserialize($additions->options);
   }
-  else if ($_POST['wnid'] != 0) {
-    $additions->wnid = $_POST['wnid'];
-    $additions->kcid = $_POST['kcid'];
-    $additions->description = $_POST['description'];
-    $additions->sort = $_POST['sort'];
-    $additions->sort_col = $_POST['sort_col'];
-    $additions->components = $_POST['components'];
-    $additions->filter_type = $_POST['filter_type'];
-    $additions->filter_value = $_POST['filter_value'];
-    $additions->results_per_page = $_POST['results_per_page'];
-  }
+
   return $additions;
 }
 
@@ -216,15 +206,17 @@ function webform_report_load($node) {
  * Implementation of hook_view
  */
 function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
+
   if(!empty($node->nid) && empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
     drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
   }
   module_load_include('inc', 'webform_report', 'webform_report');
 
-  $data = _webform_report_get_data($node);
-  $output = _webform_report_get_body_content($data, $node);
+  $output = _webform_report_get_body_content($node);
+  
   $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
   $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
+  
   return $node;
 }
 
@@ -232,8 +224,21 @@ function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
  * Implementation of hook_insert
  */
 function webform_report_insert($node) {
-  db_query("INSERT INTO {webform_report} (nid, description)
-            VALUES (%d, '%s')", $node->nid, $node->description);
+
+  $node->columns = array();
+  $node->sorton = array();
+  $node->filters = array();
+  $node->options = array();
+  
+  db_query("INSERT INTO {webform_report} (nid, description, wnid, columns, sorton, filters, options)
+            VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s')", 
+            $node->nid, 
+            $node->description, 
+            $node->wnid, 
+            serialize($node->columns), 
+            serialize($node->sorton), 
+            serialize($node->filters), 
+            serialize($node->options));
   watchdog('webform_report', 'Webform report @title added', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
 }
 
@@ -241,16 +246,24 @@ function webform_report_insert($node) {
  * Implementation of hook_update
  */
 function webform_report_update($node) {
+
   // What to update, based on url arguments.
   if(arg(2) == 'add' | arg(2) == 'edit') {
     if(arg(4) == 'criteria') {
-      db_query("UPDATE {webform_report} SET wnid = %d, kcid = %d, sort = %d, components = '%s', filter_type = %d, filter_value = '%s', results_per_page = %d
-                WHERE nid = %d", $node->wnid, $node->kcid, $node->sort, addslashes(serialize($node->components)), $node->filter_type,
-                $node->filter_value, $node->results_per_page, $node->nid
-      );
+      db_query("UPDATE {webform_report} 
+                SET columns = '%s', 
+                    sorton = '%s', 
+                    filters = '%s', 
+                    options = '%s'
+                WHERE nid = %d", 
+                serialize($node->columns), 
+                serialize($node->sorton), 
+                serialize($node->filters), 
+                serialize($node->options), 
+                $node->nid);
     }
     else {
-      db_query("UPDATE {webform_report} SET description = '%s' WHERE nid = '" . $node->nid . "'", $node->description);
+      db_query("UPDATE {webform_report} SET description = '%s' WHERE nid = %d", $node->description, $node->nid);
       watchdog('webform_report', 'Webform report @title updated', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
     }
   }
@@ -260,21 +273,18 @@ function webform_report_update($node) {
  * Implementation of hook_delete
  */
 function webform_report_delete($node) {
+
   db_query("DELETE FROM {webform_report} WHERE nid = %d", $node->nid);
   watchdog('webform_report', 'Webform report @title deleted', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
-}
-
-function webform_report_validate($node, &$form) {
-  // make the delete button redirect properly
-  if($node->op == t('Delete')) {
-    drupal_goto('node/' . $node->nid . '/delete');
-  }
 }
 
 /**
  * Implementation of hook_form
  */
-function webform_report_form(&$node, $form_state) {
+function webform_report_form($node) {
+
+  module_load_include('inc', 'webform_report', 'webform_report');
+  
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title'),
@@ -283,199 +293,47 @@ function webform_report_form(&$node, $form_state) {
     '#weight' => -9,
     '#description' => t('Enter a title for your Webform report page')
   );
+  $default = '';
+  if (isset($node->description)) {
+    $default = $node->description;
+  }
   $form['description'] = array(
     '#type' => 'textarea',
     '#title' => t('Description'),
     '#description' => t('The description will be displayed at the top of the report page'),
-    '#default_value' => $node->description,
+    '#default_value' => $default,
     '#required' => FALSE,
     '#weight' => -8
   );
-  if(arg(2) == 'edit') {
-    $form['#redirect'] = 'node/' . $node->nid . '/edit/webform_report/criteria';
+  // if adding a new report, ask for the webform
+  if (arg(1) == 'add') {
+    $form['wnid'] = array(
+      '#type' => 'select',
+      '#title' => t('Webform'),
+      '#options' => array('' => t('Select a Webform')) + _webform_report_get_webforms(),
+      '#required' => TRUE,
+      '#weight' => -7,
+      '#description' => t('Select a webform for this report.')
+    );
+  }
+  // if report already exists, only display the report title
+  else {
+    $default = '';
+    if (isset($node->wnid)) {
+      $default = check_plain(db_result(db_query("SELECT n.title FROM {node} n WHERE n.nid = %d", $node->wnid)));
+    }
+    else {
+      drupal_set_message(t('Error - Webform is not set for this report - cannot proceed.  Please delete and re-create this report.'), 'error');
+    }
+    $form['wnid'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Webform'),
+      '#default_value' => $default,
+      '#weight' => -7,
+      '#attributes' => array('readonly' => 'readonly'),
+      '#description' => t('The webform for this report - this cannot be updated.'),
+     );
   }
   return $form;
 }
 
-/**
- * Implementation of hook_validate
- */
-function webform_report_criteria_form_validate($form, &$form_state) {
-  if ($_POST['wnid'] == 0) {
-    form_set_error('wnid', t('You must select a form'));
-    unset($form_state['values']);
-  }
-  else if ($_POST['kcid'] == 0) {
-    form_set_error('kcid', t('You must select a field'));
-  }
-  else if ($_POST['filter_type'] != 0 && $_POST['filter_type'] != 7 && $_POST['filter_type'] != 8 && empty($_POST['filter_value'])) {
-    form_set_error('filter_value', t('You must specify a filter value'));
-  }
-  else if (empty($_POST['components'])) {
-    form_set_error('components', t('You must select at least one field  '));
-  }
-  $form_state['rebuild'] = TRUE;
-}
-
-/**
- * Validates and saves criteria form data when Publish button is pressed
- *
- * @param form is a form object
- * @param form_state is a form_state object
- */
-function webform_report_criteria_form_publish($form, &$form_state) {
-  $errors = form_get_errors();
-  if(empty($errors)) {
-    webform_report_update(node_load(arg(1)));
-  }
-}
-
-/**
- * Generate a form for specifying report criteria.
- *
- * @param $form_state
- * @return an array of form elements
- */
-function webform_report_criteria_form($form_state) {
-  global $user;
-  $node = node_load(arg(1));
-  // Check if the webform report has already been submitted, so that edits can be denied to users with only create permission
-  $webform_report = db_fetch_object(db_query("SELECT wnid FROM {webform_report} WHERE nid = '" . $node->nid . "'"));
-  module_load_include('inc', 'webform_report', 'webform_report');
-
-  if((arg(2) == 'add' && empty($webform_report->wnid) && user_access('create webform reports')) || (user_access('edit webform reports') || (user_access('edit own webform reports') && $user->uid == $node->uid)) || arg(2) == 'edit') {
-
-    $webforms = _webform_report_get_webforms();
-    $webform_components = _webform_report_get_components($node->wnid);
-    $meta_components = array(-1 => t('User'), -2 => t('Date'), -3 => t('Time'), -4 => t('IP Address'));
-    $filter_options = array(0 => t('none'), 1 => t('begins with'), 2 => t('does not begin with'), 3 => t('contains'), 4 => t('does not contain'), 5 => t('equals'), 6 => t('does not equal'), 7 => t('is empty'), 8 => t('is not empty'));
-    $sort_options = array(SORT_ASC => t('Ascending'), SORT_DESC => t('Descending'));
-    $results_per_page_options = array(0 => 'All', 20 => '20', 40 => '40', 60 => '60', 80 => '80', 100 => '100');
-
-    if (!empty($node->wnid)) {
-      $default = $node->wnid;
-    }
-    else {
-      $default = 0;
-    }
-    $form['wnid'] = array(
-      '#type' => 'select',
-      '#title' => t('Webform'),
-      '#default_value' => $default,
-      '#options' => array(0 => t('Select a Webform')) + $webforms,
-      '#attributes' => array('onchange' => 'this.form.submit()'),
-      '#required' => TRUE,
-      '#weight' => 0,
-      '#description' => 'Select a webform to include in the report.'
-    );
-    unset($default);
-
-    if (!empty($node->wnid)) {
-      if (!empty($node->kcid)) {
-        $default = $node->kcid;
-      }
-      else {
-        $default = 0;
-      }
-      $form['kcid'] = array(
-        '#type' => 'select',
-        '#title' => t('Key field'),
-        '#default_value' => $default,
-        '#options' => array(0 => t('Select a field')) + $meta_components + $webform_components,
-        '#attributes' => array('onchange' => 'this.form.submit()'),
-        '#required' => TRUE,
-        '#weight' => 1
-      );
-    }
-    unset($default);
-
-    if (!empty($node->kcid)) {
-      $form['filter_type'] = array(
-        '#type' => 'select',
-        '#title' => t('Filter Type'),
-        '#options' => $filter_options,
-        '#attributes' => array('onchange' => 'this.form.submit()'),
-        '#default_value' => $node->filter_type,
-        '#weight' => 3
-      );
-    }
-
-    if (!empty($node->kcid) && !empty($node->filter_type)) {
-      $form['filter_value'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Filter Value'),
-        '#description' => t('Filter the key field using the specified value'),
-        '#default_value' => $node->filter_value,
-        '#attributes' => array('onchange' => 'this.form.submit()'),
-        '#required' => FALSE,
-        '#weight' => 4
-      );
-    }
-
-    if (!empty($node->kcid)) {
-      $form['sort'] = array(
-        '#type' => 'select',
-        '#title' => t('Sort order'),
-        '#options' => $sort_options,
-        '#default_value' => $node->sort,
-        '#weight' => 2
-      );
-    }
-
-    if(is_array($node->components)) {
-      $default = $node->components;
-    }
-    else {
-      $default = array();
-    }
-    if (!empty($node->kcid)) {
-      $form['components'] = array(
-        '#type' => 'checkboxes',
-        '#title' => t('Include components'),
-        '#description' => t('Select all of the components to include in this report and click Preview to display the results'),
-        '#options' => array_map('filter_xss', $meta_components + $webform_components + array(-5 => t('Edit link'))),
-        '#default_value' => $default,
-        '#required' => TRUE,
-        '#weight' => 5
-      );
-    }
-    unset($default);
-
-    if (!empty($node->kcid)) {
-      if (arg(2) != 'add' && (!empty($node->results_per_page) || $node->results_per_page==0)) {
-        $default = $node->results_per_page;
-      }
-      else {
-        $default = 20;
-      }
-      $form['results_per_page'] = array(
-        '#type' => 'select',
-        '#title' => t('Results per page'),
-        '#options' => $results_per_page_options,
-        '#default_value' => $default,
-        '#weight' => 6
-      );
-    }
-    unset($default);
-
-    $form['update'] = array(
-      '#type' => 'submit',
-      '#value' => t('Update'),
-      '#weight' => 8
-    );
-    if(!form_get_errors()) {
-      $form['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Publish'),
-        '#validate' => array('webform_report_criteria_form_publish'),
-        '#weight' => 9
-      );
-    }
-    $form['#redirect'] = 'node/' . $node->nid;
-    return $form;
-  }
-  else {
-    drupal_access_denied();
-    exit;
-  }
-}

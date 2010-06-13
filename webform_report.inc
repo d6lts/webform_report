@@ -19,282 +19,693 @@ function _webform_report_get_webforms() {
 /**
  * Get webform components.
  *
- * @param nid is the node id of a webform
- * @return an associative array of webform components
+ * @param nid
+ *   the node id of a webform
+ * @return 
+ *   an associative array of webform components
  */
 function _webform_report_get_components($nid) {
-  $components = array();
-  $result = db_query("SELECT c.cid, c.name FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
   
+  $components = array();
+  
+  // include meta components
+  $components[-1] = array('name' => t('Submitted By User'), 'type' => 'string');
+  $components[-2] = array('name' => t('Submission Date'), 'type' => 'date');
+  $components[-3] = array('name' => t('Submission Time'), 'type' => 'time');
+  $components[-4] = array('name' => t('Submission IP Address'), 'type' => 'string');
+  $components[-5] = array('name' => t('Edit Link'), 'type' => 'link');
+  $components[-6] = array('name' => t('View Link'), 'type' => 'link');
+
+  // get components from webform  
+  $result = db_query("SELECT c.cid, c.name, c.type FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
   while ($row = db_fetch_object($result)) {
-    $component_name = substr($row->name, 0, 65);
-    if (strlen($row->name) > 65) {
-      $component_name .= '...';
-    }
-    $components[$row->cid] = t($component_name);
+    $components[$row->cid] = array('name' => filter_xss($row->name), 'type' => $row->type);
   }
   
   return $components;
 }
 
+/**
+ * return an associative array containing the webform report columns
+ *
+ * @param node
+ *   the webform report node
+ * @return 
+ *   an associative array of webform report columns
+ */
+function _webform_report_get_columns($node, $components) {
+
+  // build list of columns on the report
+  $columns = array();
+  if (is_array($node->columns)) {
+    for ($i=0; $i<count($node->columns); $i++) {
+      $cid = $node->columns[$i]['cid'];
+      if (array_key_exists($cid, $components)) {
+        $columns[] = array(
+          'name' => $components[$cid]['name'],
+          'type' => $components[$cid]['type'],
+          'format' => $node->columns[$i]['format'],
+          'cid' => $node->columns[$i]['cid'],
+        );
+      }
+    }
+  }
+  
+  return $columns;
+}
 
 /**
- * Get data for the specified webform.
+ * return an associative array containing the webform report filters
  *
- * @param node is the current node object
- * @return a database query result set
+ * @param node
+ *   the webform report node
+ * @return 
+ *   an associative array of webform report filters
+ */
+function _webform_report_get_filters($node, $components) {
+
+  // build list of filters
+  $filters = array();
+  if (is_array($node->filters)) {
+    for ($i=0; $i<count($node->filters); $i++) {
+      $cid = $node->filters[$i]['field'];
+      if (array_key_exists($cid, $components)) {
+        $filters[] = array(
+          'name' => $components[$cid]['name'],
+          'type' => $components[$cid]['type'],
+          'ftype' => $node->filters[$i]['type'],
+          'value' => $node->filters[$i]['value'],
+          'cid' => $node->filters[$i]['field'],
+        );
+      }
+    }
+  }
+  
+  return $filters;
+}
+
+/**
+ * return an associative array containing the webform report sort criteria
+ *
+ * @param node
+ *   the webform report node
+ * @return 
+ *   an associative array of webform report sort criteria
+ */
+function _webform_report_get_sorton($node, $components) {
+
+  // build list of sort parameters
+  $sorton = array();
+  if (is_array($node->sorton)) {
+    for ($i=0; $i<count($node->sorton); $i++) {
+      $cid = $node->sorton[$i]['cid'];
+      if (array_key_exists($cid, $components)) {
+        $sorton[] = array(
+          'name' => $components[$cid]['name'],
+          'type' => $components[$cid]['type'],
+          'order' => $node->sorton[$i]['order'],
+          'cid' => $node->sorton[$i]['cid'],
+        );
+      }
+    }
+  }
+
+  return $sorton;
+}
+
+/**
+ * Get submission data for the specified webform.
+ *
+ * @param node 
+ *   the current node object
+ * @return 
+ *   a database query result set
  */
 function _webform_report_get_data($node) {
-  return db_query("
-    SELECT w.nid, c.name, c.cid, c.type, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
-    FROM {webform} w
-    LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid
-    LEFT JOIN {webform_component} c ON d.cid = c.cid
-    LEFT JOIN {webform_submissions} s  ON d.sid = s.sid
-    LEFT JOIN {users} u ON s.uid = u.uid
-    WHERE d.nid = c.nid
-    AND c.nid = s.nid
-    AND s.nid = %d
-    ORDER BY d.sid, c.cid, d.no DESC, c.name, d.data", $node->wnid);
+
+  if (isset($node->wnid)) {
+    return db_query("
+      SELECT w.nid, c.name, c.cid, d.nid, d.sid, d.data, s.uid, u.name as user, s.submitted, s.remote_addr
+      FROM {webform} w
+      LEFT JOIN {webform_submitted_data} d ON w.nid = d.nid
+      LEFT JOIN {webform_component} c ON d.cid = c.cid
+      LEFT JOIN {webform_submissions} s  ON d.sid = s.sid
+      LEFT JOIN {users} u ON s.uid = u.uid
+      WHERE d.nid = c.nid 
+      AND c.nid = s.nid
+      AND s.nid = %d
+      ORDER BY d.sid, c.cid, d.no", $node->wnid);
+  }
+  else {
+    return NULL;
+  }
 }
 
 /**
  * Get node body content for the specified webform report.
  *
- * @param data is a database query result set
- * @param node is the current node object
- * @param formatcsv if TRUE format the output as a CSV file
- * @return a string of text or a themed table
+ * @param data 
+ *   the database query result set
+ * @param node 
+ *   the current node object
+ * @param formatcsv 
+ *   if TRUE format the output as a CSV file
+ * @return 
+ *   a string of text or a themed table
  */
-function _webform_report_get_body_content($data, $node, $formatcsv = FALSE) {
+function _webform_report_get_body_content($node, $formatcsv = FALSE) {
+
   $output = '';
-  if (!empty($data)) {
-    $fields = array();
-    $values = array();
-    $last_value = 0;
+  
+  // query submissions  
+  $rs = _webform_report_get_data($node);  
 
-    // Begin fields.
-    $fields[-1] = array('data' => t('User'), 'field' => -1, 'sort' => $_GET['sort']);
-    $fields[-2] = array('data' => t('Date'), 'field' => -2, 'sort' => $_GET['sort']);
-    $fields[-3] = array('data' => t('Time'), 'field' => -3, 'sort' => $_GET['sort']);
-    $fields[-4] = array('data' => t('IP Address'), 'field' => -4, 'sort' => $_GET['sort']);
-    $fields[-5] = array('data' => t('Edit'), 'field' => -5, 'sort' => $_GET['sort']);
-    while ($row = db_fetch_object($data)) {
-      if (!isset($fields[$row->cid])) {
-        $fields[$row->cid] = array('data' => check_plain($row->name), 'field' => $row->cid, 'sort' => $_GET['sort']);
+  // if any submissions
+  if (!empty($rs)) {
+  
+    // get report criteria
+    $components = _webform_report_get_components($node->wnid);
+    $columns = _webform_report_get_columns($node, $components);
+    
+    // if any columns
+    if (count($columns) > 0) {
+    
+      // get other report criteria
+      $filters = _webform_report_get_filters($node, $components);
+      $sorton = _webform_report_get_sorton($node, $components);
+  
+      // init values
+      $headers = array();
+      $rows = array();
+      $fields = array();
+      $csid = 0;
+      
+      // set column headers
+      foreach ($columns as $index => $col) {
+        // set report header
+        $headers[] = array(
+          'data' => $col['name'],
+          'field' => $col['cid']
+        );
+        // fields by cid for quick lookup
+        $fields[$col['cid']] = $col['name'];
       }
-      // Begin data.
-      // The value '0' means that a group of checkboxes has no selection.
-      if (!empty($row->data)) {
-        // This will comma-separate multiple selections from the same group of checkboxes in the same submission.
-        if ($row->cid == $last_cid && $row->sid == $last_sid && !empty($last_value)) {
-          $row->data .= ', ' . $last_value;
-        }
-        // Don't leave the user field blank if no matching user is found.
-        if (empty($row->user)) {
-          $row->user = t('Anonymous');
-        }
-        $values[$row->sid][-1] = array('data' => $row->user, 'field' => -1);
-        $values[$row->sid][-2] = array('data' => date('Y-m-d', $row->submitted), 'field' => -2);
-        $values[$row->sid][-3] = array('data' => date('H:s', $row->submitted), 'field' => -3);
-        $values[$row->sid][-4] = array('data' => $row->remote_addr, 'field' => -4);
-        $values[$row->sid][-5] = array('data' => l('edit', 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'), 'field' => -5);
-        // special handling for file uploads
-        if ($row->type == 'file') {
-          $tmp = unserialize($row->data);
-          $link = '&nbsp;';
-          if (!empty($tmp['filename'])) {
-            $link = '<a href="' . base_path() . $tmp['filepath'] . '">' . 
-                    $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
-                    '</a>';
+      // add filter fields to lookup
+      foreach ($filters as $index => $filter) {
+        // fields by cid for quick lookup
+        $fields[$filter['cid']] = $filter['name'];
+      }
+      
+      // get column data
+      while (TRUE) {
+        
+        // get next submission data
+        $row = db_fetch_object($rs);
+      
+        // check for end of data or end of submission
+        if (!$row || $row->sid != $csid) {
+          
+          // process data for this submission, if any
+          if ($csid != 0) {
+          
+            // test submission against filters
+            if (_webform_report_test_filters($data, $filters)) {
+              // output row if filters pass
+              $rows[] = _webform_report_output($data, $columns);
+            }
           }
-          $values[$row->sid][$row->cid] = array('data' => $link, 'field' => $row->cid);
+          // if end of submission data, exit
+          if (!$row) {
+            break;
+          }
+          
+          // set current submission id
+          $csid = $row->sid;
+          
+          // empty raw data row
+          $data = array();
+            
+          // fill in meta fields
+          if (array_key_exists(-1, $fields)) {
+            $data[-1] = array(l($row->user, 'user/' . $row->uid));
+          }
+          if (array_key_exists(-2, $fields)) {
+            $data[-2] = array($row->submitted);
+          }
+          if (array_key_exists(-3, $fields)) {
+            $data[-3] = array($row->submitted);
+          }
+          if (array_key_exists(-4, $fields)) {
+            $data[-4] = array($row->remote_addr);
+          }
+          if (array_key_exists(-5, $fields)) {
+            $data[-5] = array(l('edit', 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'));
+          }
+          if (array_key_exists(-6, $fields)) {
+            $data[-6] = array(l('view', 'node/'. $row->nid . '/submission/' . $row->sid));
+          }
+        }
+      
+        // if component is on report
+        if (array_key_exists($row->cid, $fields)) {
+          // add raw data
+          $data[$row->cid][] = $row->data;
+        }
+        
+      }   // end - while (TRUE)...
+      
+      // see if any rows are available
+      if (count($rows) > 0) {
+        // sort
+        _webform_report_sort($headers, $rows, $sorton);
+        // output in requested format  
+        if ($formatcsv) {
+          // format as csv
+          $output = _webform_report_output_csv($headers, $rows);
         }
         else {
-          // The attribute 'field' is used to preserve the cid, as array_multisort re-indexes the array.
-          $values[$row->sid][$row->cid] = array('data' => filter_xss($row->data), 'field' => $row->cid);
+          // Display number of rows after description.
+          $output .= filter_xss_admin($node->description) . 
+                     ' (' . count($rows) . ' ' . t('results') . ') ';
+          if (!$node->options['hide_csv']) {
+            $output .= l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
+          }
+          $output .= _webform_report_pager($headers, $rows, $node);
         }
       }
+      // no submissions met criteria
       else {
-        // This will prevent empty table cells from being omitted by filling them with blanks.
-        if (!$formatcsv) {
-          $values[$row->sid][$row->cid] = array('data' => '&nbsp;', 'field' => $row->cid);
-        }
+        $output = t('There are no submissions that match the criteria for the selected webform.');
       }
-
-      // Override the report's sort column with the table sort column, if selected.
-      if (isset($_GET['order'])) {
-        if ($_GET['order'] == $row->name && $node->kcid != $row->cid) {
-          $node->sort_col = $row->cid;
-        }
-      }
-      else {
-        // If 'order' is not specified, then no table sort link has been clicked yet.
-        switch($node->kcid) {
-          case -1:
-            $_GET['order'] = t('User');
-            break;
-          case -2:
-            $_GET['order'] = t('Date');
-            break;
-          case -3:
-            $_GET['order'] = t('Time');
-            break;
-          case -4:
-            $_GET['order'] = t('IP Address');
-            break;
-          case $row->cid:
-            // Make the sort arrow marker appear in the corresponding table column header.
-            $_GET['order'] = $row->name;
-            break;
-        }
-      }
-      $last_sid = $row->sid;
-      $last_cid = $row->cid;
-      $last_value = $row->data;
-    }
-
-    // Go to first element of the fields array.
-    reset($fields);
-
-    // Construct an array of columns for sorting.
-    $column = array();
-    foreach ($fields as $key1 => $field) {
-      foreach ($values as $key2 => $value) {
-        // Make sort order case-insensitive and remove spaces (and accents if accents module installed).
-        if (module_exists('accents')) {
-          $column[$key1][$key2] = trim(strtolower(accents_search_preprocess($value[$key1]['data'])));
-        }
-        else {
-          $column[$key1][$key2] = trim(strtolower($value[$key1]['data']));
-        }
-      }
-    }
-
-    // Override the report's sort order with the table sort order, if selected.
-    if (isset($_GET['sort'])) { 
-      switch ($_GET['sort']) {
-        case 'asc':
-          $node->sort = SORT_ASC;
-          break;
-
-        case 'desc':
-          $node->sort = SORT_DESC;
-          break;
-      }
-    }
-    else { // Otherwise, do the opposite.
-      if ($node->sort == SORT_ASC) {
-        $_GET['sort'] = 'asc';
-      }
-      else {
-        $_GET['sort'] = 'desc';
-      }
-    }
-
-    // Handle the sorting of meta, or non-component fields
-    switch($_GET['order']) {
-      case t('User'):
-        $node->sort_col = -1;
-        $sort = SORT_STRING;
-        break;
-
-      case t('Date'):
-        $node->sort_col = -2;
-        $sort = SORT_REGULAR;
-        break;
-
-      case t('Time'):
-        $node->sort_col = -3;
-        $sort = SORT_REGULAR;
-        break;
-
-      case t('IP Address'):
-        $node->sort_col = -4;
-        $sort = SORT_REGULAR;
-        break;
-
-      default:
-        $sort = SORT_REGULAR;
-    }
-
-    if(empty($node->sort_col)) {
-      $node->sort_col = $node->kcid;
-    }
-
-    if (is_array($column[$node->sort_col])) {
-      // Sort the columns and their contents according to specified criteria.
-      array_multisort($column[$node->sort_col], (int)$node->sort, $values);
-
-      // Keep only fields requested in report criteria.
-      _webform_report_prepare_report_data($fields, $values, $node);
-
-      // Filter the table values.
-      if ($node->filter_type != 0) {
-        $values = _webform_report_filter_values($values, $node);
-      }
-
-      if ($formatcsv) {
-        // format as csv
-        $output = _webform_report_output_csv($fields, $values);
-      }
-      else {
-        $values = _webform_report_add_data_links($fields, $values);
-        // Display number of rows after description.
-        $output .= filter_xss_admin($node->description) . 
-                   ' (' . count($values) . ' ' . t('results') . ') ' . 
-                   l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
-        $output .= _webform_report_pager($fields, $values, $node);
-      }
-    }
+      
+    }   // end - if (count($columns) > 0)...
+    
+    // webform report does not have any criteria
     else {
-      $output = t('It appears that no criteria have been specified for this report. Please click on the Criteria tab to add webform data to your report.');
+      $output = t('It appears that no criteria have been specified for this report. 
+        Please click on the Criteria tab to add webform data to your report.');
     }
-  }
-  // The selected webform has no submissions.
+    
+  }   // end - if (!empty($rs))...
+  
+  // the selected webform has no submissions.
   else {
-    $output = t('Note: There are no submissions for the selected webform.</b> Either the form
+    $output = t('There are no submissions for the selected webform. Either the form
        has not yet been completed by anyone, or the results have been cleared. This will not
        prevent you from creating this report, but this message will be displayed on the report
        page until someone submits the selected webform.');
   }
+  
   return $output;
 }
 
 /**
- * Rebuild result table fields and values arrays to match
- * report criteria.
+ * test data against filters
  *
- * @param fields is a reference to an array of table fields
- * @param values is a reference to an array of table values
+ * @param data
+ *   array of raw submission data
+ * @param filters
+ *   list of filters to test against data
+ * @return 
+ *   TRUE if filters passed, otherwise FALSE
  */
-function _webform_report_prepare_report_data(&$fields, &$values, $node) {
-  if (is_array($node->components)) {
-    $report_fields = array();
-    $report_values = array();
-    foreach($fields as $key1 => $field) {
-      if (in_array($key1, $node->components)) {
-        $report_fields[$key1] = $fields[$key1];
-      }
-      foreach($values as $key2 => $value) {
-        if (in_array($value[$key1]['field'], $node->components)) {
-          $report_values[$key2][$key1] = $value[$key1];
+function _webform_report_test_filters($data, $filters) {
+
+  // filter result, return true if no filters
+  $ok = TRUE;
+
+  // if any filters
+  if (count($filters) > 0) {
+  
+    // loop through all filters  
+    foreach($filters as $index => $filter) {
+
+      // check that cid is in data
+      if (array_key_exists($filter['cid'], $data)) {
+    
+        // reset result for each filter  
+        $ok = FALSE;
+        
+        // get raw data
+        $raw = $data[$filter['cid']];
+        
+        // format value
+        $value = _webform_report_format_data($raw, $filter['cid'], $filter['type']);
+        
+        // prepare filter values
+        $filter_data = strip_tags(strtolower(trim($value['data'])));
+        $filter_value = strtolower(trim($filter['value']));
+        
+        // apply filter
+        switch($filter['ftype']) {
+    
+          // none
+          case 0:
+            $ok = TRUE;
+            
+          // Begins with x.
+          case 1:
+            if (substr($filter_data, 0, drupal_strlen($filter_value)) == $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+        
+          // Does not begin with x.
+          case 2:
+            if (substr($filter_data, 0, drupal_strlen($filter_value)) != $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // Contains x.
+          case 3:
+            if (strpos($filter_data, $filter_value) !== FALSE) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // Does not contain x.
+          case 4:
+            if (strpos($filter_data, $filter_value) === FALSE) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // Equals x.
+          case 5:
+            if ($filter_data == $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // Does not equal x.
+          case 6:
+            if ($filter_data != $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // is empty
+          case 7: 
+            if (drupal_strlen($filter_data) == 0) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // is not empty        
+          case 8: 
+            if (drupal_strlen($filter_data) != 0) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // greater than
+          case 9: 
+            if ($filter_data > $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // less than
+          case 10: 
+            if ($filter_data < $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+          }   // end - switch($filter['type'])...
+          
+        }   // end - if (array_key_exists($filter['cid'], $data)...
+        
+        // if filter did not pass, don't check any further
+        if (!$ok) {
+          break;
         }
+      
+      }   // end - foreach($filters as $index => $filter)...
+      
+    }   // end - if (count($filters) > 0)...
+  
+  // return filter result
+  return $ok;
+}
+
+/**
+ * format output table row for report
+ *
+ * @param data 
+ *   raw submission data - array with key of cid, value an array of raw data
+ * @param columns
+ *   list of report columns
+ * @param filters
+ *   list of report filters
+ * @return 
+ *   table row suitable for theme_table
+ */
+ function _webform_report_output($data, $columns) {
+
+  $row = array();
+
+  // add each column to output row, applying formatting
+  foreach ($columns as $index => $col) {
+
+    // check if data exists
+    if (array_key_exists($col['cid'], $data)) {
+    
+      // get raw data
+      $raw = $data[$col['cid']];
+    
+      // add column to output row
+      $row[] = _webform_report_format_data($raw, $col['cid'], $col['type'], $col['format']);
+    }
+    else {
+    
+      // no data, add dummy data
+      $row[] = array('data' => '', 'field' => $col['cid']);
+    }
+  }
+  
+  return $row;
+}
+
+/**
+ * format raw submission data
+ *
+ * @param raw
+ *   array of raw submission data
+ * @param cid
+ *   webform componenet id of data
+ * @param type
+ *   webform type of data
+ * @param format
+ *   desired data output format
+ * @return 
+ *   array of formatted table data
+ */
+function _webform_report_format_data($raw, $cid, $type, $format = '') {
+
+  $out = '';
+  
+  // handle file type
+  if ($type == 'file') {
+    $tmp = unserialize($raw[0]);
+    $link = '&nbsp;';
+    if (!empty($tmp['filename'])) {
+      $link = '<a href="' . base_path() . $tmp['filepath'] . '">' . 
+              $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
+              '</a>';
+    }
+    $out = array('data' => $link, 'field' => $cid);
+  }
+    
+  // handle dates
+  else if ($type == 'date') {
+    $ts = 0;
+    // if report date
+    if ($cid > 0) {
+      // if date was selected
+      if ($raw[0] && $raw[1]) {
+        // make timestamp, dates are stored month, day, year
+        $ts = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
       }
     }
-    $fields = $report_fields;
-    $values = $report_values;
+    // otherwise get submission timestamp
+    else {
+      $ts = $raw[0];
+    }
+    // if valid timestamp
+    if ($ts > 0) {
+      // set default format if none given
+      if (empty($format)) {
+        $format = 'Y-m-d';
+      }
+      // format the date
+      $out = array('data' => date($format, $ts), 'field' => $cid);
+    }
   }
+    
+  // handle times
+  else if ($type == 'time') {
+    $ts = 0;
+    if ($cid > 0) {
+      // if time was selected
+      if ($raw[0] && $raw[1]) {
+        // make timestamp, times are stored hh, mm, ampm
+        $ts = strtotime($raw[0] . ':' . $raw[1] . $raw[2]);
+      }
+    }
+    else {
+      // otherwise get submission timestamp
+      $ts = $raw[0];
+    }
+    // if valid timestamp
+    if ($ts > 0) {
+      // default format if none given
+      if (empty($format)) {
+        $format = 'H:i';
+      }
+      // format the time
+      $out = array('data' => date($format, $ts), 'field' => $cid);
+    }
+  }
+  
+  // handle other column types
+  else {
+    $out = array('data' => filter_xss_admin(implode(',', $raw)), 'field' => $cid);
+  }
+    
+  // return formatted data
+  return $out;
+}
+
+/**
+ * sort column data
+ *
+ * anonymous sort comparison function creation adapted from:
+ * http://www.the-art-of-web.com/php/sortarray/
+ *
+ * @param rows
+ *   array of report rows
+ * @param sorton
+ *   list of default sort parameters
+ */
+function _webform_report_sort(&$headers, &$rows, $sorton) {
+
+  // will be empty if user has not clicked on a header
+  $init = !isset($_GET['order']);
+  
+  // get current sort - 'name' key is column name, 'sql' is cid
+  $ts = tablesort_get_order($headers);
+  // get sort order
+  $ts_order = tablesort_get_sort($headers);
+
+  // if inital display (no column header has been clicked)
+  if ($init) {
+    // and no sort parameters
+    if (count($sorton) == 0) {
+      // we must sort on first column, that is what theme_table defaults to
+      $headers[0]['sort'] = 'asc';
+      $code = 'return ' . _webform_report_sort_column(0) . ';';
+    }
+    // otherwise setup initial sort
+    else {
+      
+      $a = array();
+
+      // loop through sorts      
+      foreach ($sorton as $index => $sort) {
+        // find the header
+        foreach ($headers as $hindex => $header) {
+            
+          if ($header['field'] == $sort['cid']) {
+
+            // mark the first sort header
+            if (count($a) == 0) {
+              if ($sort['order'] == SORT_ASC) {
+                $headers[$hindex]['sort'] = 'asc';
+              }
+              else {
+                $headers[$hindex]['sort'] = 'desc';
+              }
+            }   // end - if (count($a) == 0)...
+              
+            // add the sort function
+            $a[] = _webform_report_sort_column($hindex, ($sort['order'] == SORT_DESC));
+            break;
+            
+          }  // end - if ($header['field'])...
+        }   // end - foreach ($headers as...
+      }   // end - foreach ($sorton...
+      
+      // format the complete sort function
+      if (count($a) == 0) {
+        // should not occur
+        $code = 'return FALSE';
+      }
+      else if (count($a) == 1) {
+        // only one clause, return it
+        $code = 'return ' . $a[0] . ';';
+      }
+      else {
+        // multiple clauses, build descending compare function
+        $code = '';
+        for ($i=0; $i<count($a); $i++) {
+          if ($i < count($a) - 1) {
+            $code .= 'if (($tmp = ' . $a[0] . ') == 0) { ';
+          }
+          else {
+            $code .= '$tmp = ' . $a[$i] . '; ';
+          }
+        }
+        for ($i=0; $i<count($a) - 1; $i++) {
+          $code .= ' } ';
+        }
+        $code .= 'return $tmp;';
+      }
+    }
+  }
+  // user has clicked on a column header - must sort that column
+  else {
+    foreach ($headers as $hindex => $header) {
+      if ($header['field'] == $ts['sql']) {
+        $headers[$hindex]['sort'] = $ts_order;
+        $code = 'return ' . _webform_report_sort_column($hindex, ($ts_order == 'desc')) . ';';
+        break;
+      }
+    }
+  }
+  // sort the rows
+  usort($rows, create_function('$a,$b', $code));
+}
+
+function _webform_report_sort_column($index, $desc = FALSE) {
+
+  // allow for accents
+  if (module_exists('accents')) {
+    $code = "strcasecmp(accents_search_preprocess(strip_tags(\$a[$index]['data'])), accents_search_preprocess(strip_tags(\$b[$index]['data'])))";
+  }
+  else {
+    $code = "strcasecmp(strip_tags(\$a[$index]['data']), strip_tags(\$b[$index]['data']))";
+  }
+  if ($desc) {
+    $code = $code . ' * -1';
+  }
+  $code = '(' . $code . ')';
+
+  return $code;
 }
 
 /**
  * Add links to relevant data fields.
  *
- * @param fields is an array of table fields
- * @param values is an array of table values
- * @return an array of table values
+ * @param fields 
+ *   an array of table fields
+ * @param values 
+ *   an array of table values
+ * @return 
+ *   an array of table values
  */
 function _webform_report_add_data_links($fields, $values) {
+ 
   foreach($fields as $key1 => $field) {
     foreach($values as $key2 => $value) {
       // This is to shorten access to the data element of the array, for the following statements.
@@ -319,91 +730,16 @@ function _webform_report_add_data_links($fields, $values) {
 }
 
 /**
- * Filter an array of table values.
- *
- * @param values is an array of table values
- * @node is the current node object
- * @return a filtered array of table values
- */
-function _webform_report_filter_values($values, $node) {
-  $filtered_values = array();
-  foreach($values as $key => $value) {
-    switch($node->filter_type) {
-      // Begins with x.
-      case 1:
-        if (substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) == strtolower($node->filter_value)) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // Does not begin with x.
-      case 2:
-        if (substr(strtolower(trim($value[$node->kcid]['data'])), 0, strlen($node->filter_value)) != strtolower($node->filter_value)) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // Contains x.
-      case 3:
-        if (strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) !== FALSE) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // Does not contain x.
-      case 4:
-        if (strpos(strtolower(trim($value[$node->kcid]['data'])), strtolower($node->filter_value)) === FALSE) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // Equals x.
-      case 5:
-        if (strtolower(trim($value[$node->kcid]['data'])) == strtolower(trim($node->filter_value))) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // Does not equal x.
-      case 6:
-        if (strtolower(trim($value[$node->kcid]['data'])) != strtolower(trim($node->filter_value))) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // is empty
-      case 7: 
-        if (strlen(trim($value[$node->kcid]['data'])) == 0) {
-          $filtered_values[] = $value;
-        }
-        break;
-      // is not empty        
-      case 8: 
-        if (strlen(trim($value[$node->kcid]['data'])) != 0) {
-          $filtered_values[] = $value;
-        }
-        break;
-    }
-  }
-
-  return $filtered_values;
-}
-
-/**
- * Return the uid corresponding with a valid username.
- *
- * @param a string consisting of a valid username
- * @return a uid for the specified user
- */
-function _webform_report_get_uid_for_user($name) {
-  $result = db_query("SELECT uid FROM {users} WHERE name = '%s'", $name);
-  $user = db_fetch_object($result);
-  return $user->uid;
-}
-
-/**
  * Display a list of webform reports in the admin area.
  *
- * @return a themed table
+ * @return 
+ *   a themed table
  */
 function _webform_report_page() {
+
   $output = NULL;
   if (user_access('access webform reports')) {
-    $header = array(t('View'), t('Edit'), t('Delete'));
+    $headers = array(t('View'), t('Edit'), t('Delete'));
 
     $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type='webform_report'"));
    
@@ -414,8 +750,7 @@ function _webform_report_page() {
 
     }
   
-    $output = theme_table($header, $rows, array('class' => 'webform'));
-    drupal_set_title(check_plain($node->title));
+    $output = theme_table($headers, $rows, array('class' => 'webform'));
   }
   return $output;
 }
@@ -423,26 +758,28 @@ function _webform_report_page() {
 /**
  * Paginate the webform report.
  *
- * @return a themed table with page links
+ * @return 
+ *   a themed table with page links
  */
-function _webform_report_pager($fields, $values, $node) {
+function _webform_report_pager($headers, $rows, $node) {
 
   global $pager_page_array, $pager_total;
 
-  // For backward compatibility to earlier versions.
+  // get results per page setting - start with default
   $results_per_page = 20;
-  if (!$node->results_per_page || $node->results_per_page == 0) {
-    $results_per_page = $node->results_per_page;
+  // if value set, use that
+  if (array_key_exists('results_per_page', $node->options)) { 
+    $results_per_page = $node->options['results_per_page'];
   }
   // Add the css file for form display.
   drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');
 
   // Break the array into chunks for pagination.
-  if ($results_per_page) {
-    $pages = array_chunk($values, $results_per_page, TRUE); 
+  if ($results_per_page != 0) {
+    $pages = array_chunk($rows, $results_per_page, TRUE); 
   }
   else {
-    $pages[0] = $values;
+    $pages[0] = $rows;
   }
   
   // Grab the 'page' query parameter.
@@ -455,7 +792,7 @@ function _webform_report_pager($fields, $values, $node) {
     
   // format the table with the current page
   if ($page == '') $page = 0;
-  $output = theme_table($fields, $pages[$page], array('class' => 'webform_report'));
+  $output = theme_table($headers, $pages[$page], array('class' => 'webform_report'));
     
   // Put some magic in the two global variables
   // Based on code in pager_query() in pager.inc
@@ -474,11 +811,13 @@ function _webform_report_pager($fields, $values, $node) {
 
 /**
  * Output a webform report in CSV format
+ *
+ * @param node
+ *   the current node
  */
 function webform_report_csv($node) {
 
-  $data = _webform_report_get_data($node);  
-  $output = _webform_report_get_body_content($data, $node, TRUE);
+  $output = _webform_report_get_body_content($node, TRUE);
       
   $fname = 'wfr_export.csv';
   header('Content-Type: text/plain');
@@ -490,7 +829,8 @@ function webform_report_csv($node) {
 /**
  * Format webform report data as a CSV
  *
- * @return CSV output
+ * @return 
+ *   CSV output
  */
 function _webform_report_output_csv($fields, $values) {
 
@@ -515,7 +855,8 @@ function _webform_report_output_csv($fields, $values) {
 /**
  * Format a CSV column value
  *
- * @return CSV column
+ * @return 
+ *   CSV column
  */
 function _webform_report_format_csv_column($value) {
 
@@ -529,4 +870,3 @@ function _webform_report_format_csv_column($value) {
     }
     return $value;
 }
-?>
