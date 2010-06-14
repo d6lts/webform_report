@@ -473,7 +473,7 @@ function _webform_report_test_filters($data, $filters) {
     
       // get raw data
       $raw = $data[$col['cid']];
-    
+
       // add column to output row
       $row[] = _webform_report_format_data($raw, $col['cid'], $col['type'], $col['format']);
     }
@@ -571,6 +571,16 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
   // handle other column types
   else {
     $out = array('data' => filter_xss_admin(implode(',', $raw)), 'field' => $cid);
+
+    // add links
+    if (valid_email_address($out['data'])) {
+      $out['data'] = l($out['data'], 'mailto:' . $out['data']);
+    }
+    else {
+      if (valid_url($out['data'], TRUE)) {
+          $out['data'] = l($out['data'], $out['data']);
+      }
+    }
   }
     
   // return formatted data
@@ -677,6 +687,16 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
   usort($rows, create_function('$a,$b', $code));
 }
 
+/**
+ * Generate a sort function for a column
+ *
+ * @param index
+ *   the index of the field to sort
+ * @param desc 
+ *   if true sort is descending
+ * @return 
+ *   the sort function for the given column
+ */
 function _webform_report_sort_column($index, $desc = FALSE) {
 
   // allow for accents
@@ -692,41 +712,6 @@ function _webform_report_sort_column($index, $desc = FALSE) {
   $code = '(' . $code . ')';
 
   return $code;
-}
-
-/**
- * Add links to relevant data fields.
- *
- * @param fields 
- *   an array of table fields
- * @param values 
- *   an array of table values
- * @return 
- *   an array of table values
- */
-function _webform_report_add_data_links($fields, $values) {
- 
-  foreach($fields as $key1 => $field) {
-    foreach($values as $key2 => $value) {
-      // This is to shorten access to the data element of the array, for the following statements.
-      $data = &$values[$key2][$key1]['data'];
-
-      if ($key1 == -1) {
-        $data = l($data, 'user/' . _webform_report_get_uid_for_user($data));
-      }
-      else {
-        if (valid_email_address($data)) {
-          $data = l($data, 'mailto:' . $data);
-        }
-        else {
-          if (valid_url($data, TRUE)) {
-            $data = l($data, $data);
-          }
-        }
-      }
-    }
-  }
-  return $values;
 }
 
 /**
