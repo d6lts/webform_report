@@ -202,10 +202,11 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
       
       // set column headers
       foreach ($columns as $index => $col) {
-        // set report header
+        // set report header - also save type for later
         $headers[] = array(
           'data' => $col['name'],
-          'field' => $col['cid']
+          'field' => $col['cid'],
+          'type' => $col['type']
         );
         // fields by cid for quick lookup
         $fields[$col['cid']] = $col['name'];
@@ -614,7 +615,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
     if (count($sorton) == 0) {
       // we must sort on first column, that is what theme_table defaults to
       $headers[0]['sort'] = 'asc';
-      $code = 'return ' . _webform_report_sort_column(0) . ';';
+      $code = 'return ' . _webform_report_sort_column(0, FALSE, $headers[0]['type']) . ';';
     }
     // otherwise setup initial sort
     else {
@@ -639,7 +640,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
             }   // end - if (count($a) == 0)...
               
             // add the sort function
-            $a[] = _webform_report_sort_column($hindex, ($sort['order'] == SORT_DESC));
+            $a[] = _webform_report_sort_column($hindex, ($sort['order'] == SORT_DESC), $sort['type']);
             break;
             
           }  // end - if ($header['field'])...
@@ -678,7 +679,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
     foreach ($headers as $hindex => $header) {
       if ($header['field'] == $ts['sql']) {
         $headers[$hindex]['sort'] = $ts_order;
-        $code = 'return ' . _webform_report_sort_column($hindex, ($ts_order == 'desc')) . ';';
+        $code = 'return ' . _webform_report_sort_column($hindex, ($ts_order == 'desc'), $header['type']) . ';';
         break;
       }
     }
@@ -692,20 +693,31 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
  *
  * @param index
  *   the index of the field to sort
+ * @param type
+ *   the field type 
  * @param desc 
  *   if true sort is descending
  * @return 
  *   the sort function for the given column
  */
-function _webform_report_sort_column($index, $desc = FALSE) {
+function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
 
-  // allow for accents
-  if (module_exists('accents')) {
-    $code = "strcasecmp(accents_search_preprocess(strip_tags(\$a[$index]['data'])), accents_search_preprocess(strip_tags(\$b[$index]['data'])))";
+  // create comparison based on type
+  // for dates and times convert to timestamp
+  if ($type == 'date' || $type == 'time') {
+      $code = "(strtotime(\$a[$index]['data'])-strtotime(\$b[$index]['data']))";
   }
+  // for all other type, handle as string
   else {
-    $code = "strcasecmp(strip_tags(\$a[$index]['data']), strip_tags(\$b[$index]['data']))";
+    // allow for accents
+    if (module_exists('accents')) {
+      $code = "strcasecmp(accents_search_preprocess(strip_tags(\$a[$index]['data'])), accents_search_preprocess(strip_tags(\$b[$index]['data'])))";
+    }
+    else {
+      $code = "strcasecmp(strip_tags(\$a[$index]['data']), strip_tags(\$b[$index]['data']))";
+    }
   }
+  // invert output for descending sort
   if ($desc) {
     $code = $code . ' * -1';
   }
