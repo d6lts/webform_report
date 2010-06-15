@@ -515,7 +515,7 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
               $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
               '</a>';
     }
-    $out = array('data' => $link, 'field' => $cid);
+    $out = array('data' => $link, 'field' => $cid, 'sort' => $tmp['filepath']);
   }
     
   // handle dates
@@ -540,7 +540,7 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
         $format = 'Y-m-d';
       }
       // format the date
-      $out = array('data' => date($format, $ts), 'field' => $cid);
+      $out = array('data' => date($format, $ts), 'field' => $cid, 'sort' => $ts);
     }
   }
     
@@ -565,13 +565,21 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
         $format = 'H:i';
       }
       // format the time
-      $out = array('data' => date($format, $ts), 'field' => $cid);
+      $out = array('data' => date($format, $ts), 'field' => $cid, 'sort' => $ts);
     }
   }
   
   // handle other column types
   else {
-    $out = array('data' => filter_xss_admin(implode(',', $raw)), 'field' => $cid);
+    // get raw data
+    $tmp = filter_xss_admin(implode(',', $raw));
+    // build sort key  
+    $sort = strip_tags($tmp);
+    // allow for accents if module is present
+    if (function_exists('_accents_remove_accents')) {
+      $sort = _accents_remove_accents($sort);
+    }
+    $out = array('data' => $tmp, 'field' => $cid, 'sort' => $sort);
 
     // add links
     if (valid_email_address($out['data'])) {
@@ -704,17 +712,11 @@ function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
   // create comparison based on type
   // for dates and times convert to timestamp
   if ($type == 'date' || $type == 'time') {
-      $code = "(strtotime(\$a[$index]['data'])-strtotime(\$b[$index]['data']))";
+      $code = "(\$a[$index]['sort']-\$b[$index]['sort'])";
   }
   // for all other type, handle as string
   else {
-    // allow for accents
-    if (function_exists('_accents_remove_accents')) {
-      $code = "strcasecmp(_accents_remove_accents(strip_tags(\$a[$index]['data'])), _accents_remove_accents(strip_tags(\$b[$index]['data'])))";
-    }
-    else {
-      $code = "strcasecmp(strip_tags(\$a[$index]['data']), strip_tags(\$b[$index]['data']))";
-    }
+    $code = "strcasecmp(\$a[$index]['sort'], \$b[$index]['sort'])";
   }
   // invert output for descending sort
   if ($desc) {
