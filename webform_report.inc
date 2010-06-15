@@ -617,9 +617,8 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
       $headers[0]['sort'] = 'asc';
       $code = 'return ' . _webform_report_sort_column(0, FALSE, $headers[0]['type']) . ';';
     }
-    // otherwise setup initial sort
+    // otherwise setup initial sort, if specified
     else {
-      
       $a = array();
 
       // loop through sorts      
@@ -649,8 +648,8 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
       
       // format the complete sort function
       if (count($a) == 0) {
-        // should not occur
-        $code = 'return FALSE';
+        // probably no columns
+        $code = 'return 0;';
       }
       else if (count($a) == 1) {
         // only one clause, return it
@@ -710,8 +709,8 @@ function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
   // for all other type, handle as string
   else {
     // allow for accents
-    if (module_exists('accents')) {
-      $code = "strcasecmp(accents_search_preprocess(strip_tags(\$a[$index]['data'])), accents_search_preprocess(strip_tags(\$b[$index]['data'])))";
+    if (function_exists('_accents_remove_accents')) {
+      $code = "strcasecmp(_accents_remove_accents(strip_tags(\$a[$index]['data'])), _accents_remove_accents(strip_tags(\$b[$index]['data'])))";
     }
     else {
       $code = "strcasecmp(strip_tags(\$a[$index]['data']), strip_tags(\$b[$index]['data']))";
