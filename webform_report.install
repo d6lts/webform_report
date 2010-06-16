@@ -14,13 +14,11 @@ function webform_report_schema() {
     'fields' => array(
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
-      'kcid' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
       'description' => array('type' => 'text', 'not null' => TRUE),
-      'sort' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 4, 'size' => 'small'),
-      'components' => array('type' => 'text', 'not null' => TRUE),
-      'filter_type' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'size' => 'small'),
-      'filter_value' => array('type' => 'varchar', 'not null' => TRUE, 'default' => '', 'length' => 128),
-      'results_per_page' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 20, 'size' => 'tiny')
+      'columns' => array('type' => 'text', 'not null' => TRUE),
+      'filters' => array('type' => 'text', 'not null' => TRUE),
+      'sorton' => array('type' => 'text', 'not null' => TRUE),
+      'options' => array('type' => 'text', 'not null' => TRUE)
     ),
     'primary key' => array('nid')
   );
