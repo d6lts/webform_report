@@ -1,10 +1,22 @@
 <?php
 
+// $Id:
+
+/**
+ * @file
+ * This file contains the functions required to implement the
+ * Report Criteria form for the webform report module
+ */
+ 
 /**
  * Generate a form for specifying report criteria.
  *
- * @param $form_state
- * @return an array of form elements
+ * @param form_state
+ *   drupal form state
+ * *param node
+ *   current node object
+ * @return 
+ *   an array of form elements
  */
 function webform_report_criteria_form($form_state, $node) {
   
@@ -271,6 +283,22 @@ function webform_report_criteria_form($form_state, $node) {
   }
 }
 
+/**
+ * Add list buttons to a form
+ *
+ * @param form
+ *   the form to add the components
+ * *param img_path
+ *   path to button image files
+ * *param list
+ *   the list name
+ * *param cid
+ *   the current item cid
+ * *param index
+ *   the current item index
+ * *param count
+ *   the number of items in the list
+ */
 function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $cid, $index, $count) {
 
   $form[$list][$index]['delete'] = array(
@@ -333,6 +361,11 @@ function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $ci
 
 /**
  * Theme the report criteria form
+ *
+ * @param form
+ *   the form to theme
+ * @return
+ *   the rendered form
  */
 function theme_webform_report_criteria_form($form) {
 
@@ -483,6 +516,14 @@ function webform_report_criteria_form_validate($form_id, $form_state) {
   
 }
 
+/**
+ * Implementation of hook_submit for the criteria form list buttons
+ *
+ * @param form_id
+ *   drupal form id
+ * @param form_state
+ *   drupal form state and values
+ */
 function webform_report_criteria_form_list_submit($form_id, $form_state) {
 
   // load the node
@@ -620,7 +661,12 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
 }
 
 /**
- * Implementation of hook_submit
+ * Implementation of hook_submit for the criteria form update button
+ *
+ * @param form_id
+ *   drupal form id
+ * @param form_state
+ *   drupal form state and values
  */
 function webform_report_criteria_form_submit($form_id, $form_state) {
 

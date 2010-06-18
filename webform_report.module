@@ -2,6 +2,7 @@
 /* $Id$ */
 
 /**
+ * @file
  * This module allows users to create simple, dynamic reports based on data collected
  * by the webform module. It adds a new node type that contains the report criteria,
  * and the data displayed is updated automatically as webforms are date. The data

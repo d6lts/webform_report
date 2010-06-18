@@ -3,6 +3,12 @@
 // $Id$
 
 /**
+ * @file
+ * This file contains common functions and functions required
+ * to ouput a report for the webform report module
+ */
+ 
+/**
  * Search for nodes of type webform and returns their nids and titles
  * in an associative array.
  */
@@ -50,6 +56,8 @@ function _webform_report_get_components($nid) {
  *
  * @param node
  *   the webform report node
+ * @param components
+ *   array of webform components
  * @return 
  *   an associative array of webform report columns
  */
@@ -79,6 +87,8 @@ function _webform_report_get_columns($node, $components) {
  *
  * @param node
  *   the webform report node
+ * @param components
+ *   array of webform components
  * @return 
  *   an associative array of webform report filters
  */
@@ -109,6 +119,8 @@ function _webform_report_get_filters($node, $components) {
  *
  * @param node
  *   the webform report node
+ * @param components
+ *   array of webform components
  * @return 
  *   an associative array of webform report sort criteria
  */
@@ -164,8 +176,6 @@ function _webform_report_get_data($node) {
 /**
  * Get node body content for the specified webform report.
  *
- * @param data 
- *   the database query result set
  * @param node 
  *   the current node object
  * @param formatcsv 
@@ -291,6 +301,7 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
           if (!$node->options['hide_csv']) {
             $output .= l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
           }
+          // output current page
           $output .= _webform_report_pager($headers, $rows, $node);
         }
       }
@@ -457,8 +468,6 @@ function _webform_report_test_filters($data, $filters) {
  *   raw submission data - array with key of cid, value an array of raw data
  * @param columns
  *   list of report columns
- * @param filters
- *   list of report filters
  * @return 
  *   table row suitable for theme_table
  */
@@ -597,11 +606,13 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
 }
 
 /**
- * sort column data
+ * sort row data
  *
  * anonymous sort comparison function creation adapted from:
  * http://www.the-art-of-web.com/php/sortarray/
  *
+ * @param headers
+ *   array of report headers
  * @param rows
  *   array of report rows
  * @param sorton
@@ -700,21 +711,21 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
  *
  * @param index
  *   the index of the field to sort
- * @param type
- *   the field type 
  * @param desc 
  *   if true sort is descending
+ * @param type
+ *   the field type 
  * @return 
  *   the sort function for the given column
  */
 function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
 
   // create comparison based on type
-  // for dates and times convert to timestamp
+  // for dates and times compare timestamps
   if ($type == 'date' || $type == 'time') {
       $code = "(\$a[$index]['sort']-\$b[$index]['sort'])";
   }
-  // for all other type, handle as string
+  // for all other types, handle as string
   else {
     $code = "strcasecmp(\$a[$index]['sort'], \$b[$index]['sort'])";
   }
@@ -827,24 +838,31 @@ function webform_report_csv($node) {
 /**
  * Format webform report data as a CSV
  *
+ * @param headers
+ *   report headers
+ * @param rows
+ *   report rows
  * @return 
  *   CSV output
  */
-function _webform_report_output_csv($fields, $values) {
+function _webform_report_output_csv($headers, $rows) {
 
   $output = '';
+  
+  // output headers
   $tmp = array();
-  foreach($fields as $cell) {
-    $tmp[] .= _webform_report_format_csv_column($cell['data']);
+  foreach($headers as $header) {
+    $tmp[] .= _webform_report_format_csv_column($header['data']);
   }
-  $output .= implode(',', $tmp) . "\r\n";
+  $output .= implode(',', $tmp) . "\n";
 
-  foreach($values as $row) {
+  // output rows
+  foreach($rows as $row) {
     $tmp = array();
     foreach($row as $cell) {
-      $tmp[] = _webform_report_format_csv_column($cell['data']);
+      $tmp[] = _webform_report_format_csv_column(strip_tags($cell['data']));
     }
-    $output .= implode(',', $tmp) . "\r\n";
+    $output .= implode(',', $tmp) . "\n";
   }
 
   return $output;
@@ -853,18 +871,22 @@ function _webform_report_output_csv($fields, $values) {
 /**
  * Format a CSV column value
  *
+ * @param value
+ *   the value to format for CSV
  * @return 
  *   CSV column
  */
 function _webform_report_format_csv_column($value) {
 
-    // if value contains a comma, it should be delimited by quotes
-    if (strpos($value, ',')) {
-        // if value contains quotes, double the quotes
-        if (strpos($value, '"'))
-            return '"' . str_replace('"', '""', $value) . '"';
-        else
-            return '"' . $value . '"';
-    }
-    return $value;
+  // if value contains a comma, it should be delimited by quotes
+  if (strpos($value, ',')) {
+      // if value contains quotes, double the quotes
+      if (strpos($value, '"')) {
+        return '"' . str_replace('"', '""', $value) . '"';
+      }
+      else {
+        return '"' . $value . '"';
+      }
+  }
+  return $value;
 }
