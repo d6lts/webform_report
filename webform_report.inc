@@ -752,12 +752,13 @@ function _webform_report_page() {
   if (user_access('access webform reports')) {
     $headers = array(t('View'), t('Edit'), t('Delete'));
 
-    $list = _webform_report_get_webforms();
-    foreach($list as $nid => $title) {
+    $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type='webform_report'"));
+   
+    while ($node = db_fetch_object($result)) {
       $rows[] = array(
-        l($title,'node/' . $nid),
-        l(t('edit'), 'node/'.$nid.'/edit'),
-        l(t('delete'), 'node/'.$nid.'/delete')
+        l($node->title,'node/' . $node->nid),
+        l(t('edit'), 'node/'.$node->nid.'/edit'),
+        l(t('delete'), 'node/'.$node->nid.'/delete')
       );
     }
   
