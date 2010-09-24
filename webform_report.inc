@@ -14,7 +14,9 @@
  */
 function _webform_report_get_webforms() {
   $webforms = array();
-  $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type = 'webform'"));
+  $webform_types = variable_get('webform_node_types', array('webform'));
+  $placeholders = db_placeholders($webform_types, 'varchar');
+  $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type in ($placeholders)"), $webform_types);
 
   while ($row = db_fetch_object($result)) {
     $webforms[$row->nid] = t($row->title);
@@ -750,13 +752,13 @@ function _webform_report_page() {
   if (user_access('access webform reports')) {
     $headers = array(t('View'), t('Edit'), t('Delete'));
 
-    $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type='webform_report'"));
-   
-    while ($node = db_fetch_object($result)) {
-      $rows[] = array(l($node->title,'node/' . $node->nid),
-                      l(t('edit'), 'node/'.$node->nid.'/edit'),
-                      l(t('delete'), 'node/'.$node->nid.'/delete'));
-
+    $list = _webform_report_get_webforms();
+    foreach($list as $nid => $title) {
+      $rows[] = array(
+        l($title,'node/' . $nid),
+        l(t('edit'), 'node/'.$nid.'/edit'),
+        l(t('delete'), 'node/'.$nid.'/delete')
+      );
     }
   
     $output = theme_table($headers, $rows, array('class' => 'webform'));
