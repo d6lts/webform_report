@@ -75,7 +75,9 @@ function _webform_report_get_columns($node, $components) {
           'name' => $components[$cid]['name'],
           'type' => $components[$cid]['type'],
           'format' => $node->columns[$i]['format'],
+          'option' => $node->columns[$i]['option'],
           'cid' => $node->columns[$i]['cid'],
+          'hidden' => $node->columns[$i]['hidden'],
         );
       }
     }
@@ -214,14 +216,30 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
       
       // set column headers
       foreach ($columns as $index => $col) {
-        // set report header - also save type for later
-        $headers[] = array(
-          'data' => $col['name'],
-          'field' => $col['cid'],
-          'type' => $col['type']
-        );
+        if ($col['hidden'] != TRUE) {
+          // set report header - also save type for later
+          $headers[] = array(
+            'data' => $col['name'],
+            'field' => $col['cid'],
+            'type' => $col['type']
+          );
+        }
         // fields by cid for quick lookup
         $fields[$col['cid']] = $col['name'];
+        // Get mapping for select lists (Start)
+        if ($col['type'] == 'select') {
+          $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = %d AND c.cid = %d", $node->wnid, $col['cid']);
+          $r = db_fetch_object($result);
+          $extra = unserialize($r->extra);
+          if (strpos($extra['items'],'|')){
+            $columns[$index]['pairs'] = array();
+            foreach (explode("\n",$extra['items']) as $pair){
+              list ($k,$v) = explode ('|',$pair);
+              $columns[$index]['pairs'][$k] = $v;
+            }
+          }
+       }
+       // Get mapping for select lists (End)
       }
       // add filter fields to lookup
       foreach ($filters as $index => $filter) {
@@ -290,7 +308,8 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
       // see if any rows are available
       if (count($rows) > 0) {
         // sort
-        _webform_report_sort($headers, $rows, $sorton);
+        _webform_report_sort($headers, $rows, $sorton, $columns);
+        
         // output in requested format  
         if ($formatcsv) {
           // format as csv
@@ -370,6 +389,39 @@ function _webform_report_test_filters($data, $filters) {
         $filter_data = strip_tags(strtolower(trim($value['data'])));
         $filter_value = strtolower(trim($filter['value']));
         
+        // flag eq, ne, gt, lt, ge, le compares
+        $cmpflag = (
+          $filter['ftype'] == 5 || $filter['ftype'] == 6 ||
+          $filter['ftype'] == 9 || $filter['ftype'] == 10 ||
+          $filter['ftype'] == 11 || $filter['ftype'] == 12
+        );
+        
+        // see if special date and time processing is required
+        if ($filter['type'] == 'date' && $cmpflag) {
+          // user entered date
+          if ($filter['cid'] > 0) {
+            $filter_data = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
+          }
+          // submission date
+          else {
+            $filter_data = strtotime(date('m/d/Y', $raw[0]));
+          }
+          // convert date value to timestamp
+          $filter_value = strtotime($filter_value);
+        }
+        if ($filter['type'] == 'time' && $cmpflag) {
+          // user entered time
+          if ($filter['cid'] > 0) {
+            $filter_data = strtotime($raw[0] .':'. $raw[1]);
+          }
+          // submission time
+          else {
+            $filter_data = strtotime(date('H:m', $raw[0]));
+          }
+          // convert time value to timestamp
+          $filter_value = strtotime($filter_value);
+        }
+        
         // apply filter
         switch($filter['ftype']) {
     
@@ -446,6 +498,20 @@ function _webform_report_test_filters($data, $filters) {
               $ok = TRUE;
             }
             break;
+            
+          // greater than or equal
+          case 11: 
+            if ($filter_data >= $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+            
+          // less than or equal
+          case 12: 
+            if ($filter_data <= $filter_value) {
+              $ok = TRUE;
+            }
+            break;
           }   // end - switch($filter['type'])...
           
         }   // end - if (array_key_exists($filter['cid'], $data)...
@@ -487,7 +553,7 @@ function _webform_report_test_filters($data, $filters) {
       $raw = $data[$col['cid']];
 
       // add column to output row
-      $row[] = _webform_report_format_data($raw, $col['cid'], $col['type'], $col['format']);
+      $row[] = _webform_report_format_data($raw, $col);
     }
     else {
     
@@ -504,40 +570,65 @@ function _webform_report_test_filters($data, $filters) {
  *
  * @param raw
  *   array of raw submission data
- * @param cid
- *   webform componenet id of data
- * @param type
- *   webform type of data
- * @param format
- *   desired data output format
+ * @param column
+ *   the report column
  * @return 
  *   array of formatted table data
  */
-function _webform_report_format_data($raw, $cid, $type, $format = '') {
+function _webform_report_format_data($raw, $column) {
 
   $out = '';
   
   // handle file type
-  if ($type == 'file') {
-    $tmp = unserialize($raw[0]);
+  if ($column['type'] == 'file') {
     $link = '&nbsp;';
-    if (!empty($tmp['filename'])) {
-      $link = '<a href="' . base_path() . $tmp['filepath'] . '">' . 
-              $tmp['filename'] . ' (' . (int) ($tmp['filesize'] / 1024) .' KB)' . 
-              '</a>';
+    $text = '';
+     
+    // new file handling in webforms 6.x-3.x - data is an id
+    if (is_numeric($raw[0])) {
+      // must load the webform file component handler
+      module_load_include('inc', 'webform', 'components/file');
+      $file = webform_get_file($raw[0]);
+      if (!empty($file->fid)) {
+        $text = webform_file_name($file->filepath);
+        $path = webform_file_url($file->filepath);
+        $link = '<a href="' . $path . '">' . 
+                $text . '</a>' . 
+                ' (' . (int) ($file->filesize/1024) . ' KB)';
+      }
     }
-    $out = array('data' => $link, 'field' => $cid, 'sort' => $tmp['filepath']);
+    // file handling for prior versions of webforms - data is serialized fileinfo
+    else {
+      $tmp = unserialize($raw[0]);
+      if (!empty($tmp['filename'])) {
+        $text = $tmp['filename'];
+        $path = base_path() . $tmp['filepath'];
+        $link = '<a href="' . $path . '">' . 
+                $text . '</a>' . 
+                ' (' . (int) ($tmp['filesize'] / 1024) .' KB)';
+      }
+    }
+    // output file column - save path for later
+    $out = array('data' => $link, 'field' => $cid, 'sort' => $text, 'path' => $path);
   }
     
   // handle dates
-  else if ($type == 'date') {
+  else if ($column['type'] == 'date') {
     $ts = 0;
     // if report date
-    if ($cid > 0) {
-      // if date was selected
-      if ($raw[0] && $raw[1]) {
-        // make timestamp, dates are stored month, day, year
-        $ts = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
+    if ($column['cid'] > 0) {
+      // handle webforms 6.x-3.x dates
+      if (count($raw) == 1) {
+        // date is stored as yyyy-mm-dd
+        $ts = strtotime($raw[0]);
+      }
+      // handle prior webforms versions
+      else {
+        // if date was selected
+        if ($raw[0] && $raw[1]) {
+          // make timestamp, dates are stored month, day, year
+          $ts = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
+        }
       }
     }
     // otherwise get submission timestamp
@@ -546,23 +637,32 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
     }
     // if valid timestamp
     if ($ts > 0) {
+      $format = $column['format'];
       // set default format if none given
       if (empty($format)) {
         $format = 'Y-m-d';
       }
       // format the date
-      $out = array('data' => date($format, $ts), 'field' => $cid, 'sort' => $ts);
+      $out = array('data' => date($format, $ts), 'field' => $column['cid'], 'sort' => $ts);
     }
   }
     
   // handle times
-  else if ($type == 'time') {
+  else if ($column['type'] == 'time') {
     $ts = 0;
-    if ($cid > 0) {
+    if ($column['cid'] > 0) {
+      // handle webforms 6.x-3.x time
+      if (count($raw) == 1) {
+        // date is stored as hh:mm:ss
+        $ts = strtotime($raw[0]);
+      }
+      // handle prior webforms versions
+      else {
       // if time was selected
-      if ($raw[0] && $raw[1]) {
-        // make timestamp, times are stored hh, mm, ampm
-        $ts = strtotime($raw[0] . ':' . $raw[1] . $raw[2]);
+        if ($raw[0] && $raw[1]) {
+          // make timestamp, times are stored hh, mm, ampm
+          $ts = strtotime($raw[0] . ':' . $raw[1] . $raw[2]);
+        }
       }
     }
     else {
@@ -571,13 +671,36 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
     }
     // if valid timestamp
     if ($ts > 0) {
+      $format = $column['format'];
       // default format if none given
       if (empty($format)) {
         $format = 'H:i';
       }
       // format the time
-      $out = array('data' => date($format, $ts), 'field' => $cid, 'sort' => $ts);
+      $out = array('data' => date($format, $ts), 'field' => $column['cid'], 'sort' => $ts);
     }
+  }
+  
+  // handle select type
+  else if ($column['type'] == 'select') {
+    // save key value
+    $key = $raw[0];
+    // display key if wanted or if no key/value pairs exist
+    if ($column['format'] == 'KEY' || !array_key_exists('pairs', $column)) {
+      $data = $key;
+    }
+    else {
+      // set select value to friendly format (default)
+      $data = $column['pairs'][$key];
+    }
+    // set sort key - default is same as display
+    $sort = $data;
+    // change to key if selected
+    if ($column['option'] == 'KEY') {
+      $sort = $key;
+    }
+    // save the value
+    $out = array('data' => $data, 'field' => $column['cid'], 'sort' => $sort);
   }
   
   // handle other column types
@@ -590,7 +713,7 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
     if (function_exists('_accents_remove_accents')) {
       $sort = _accents_remove_accents($sort);
     }
-    $out = array('data' => $tmp, 'field' => $cid, 'sort' => $sort);
+    $out = array('data' => $tmp, 'field' => $column['cid'], 'sort' => $sort);
 
     // add links
     if (valid_email_address($out['data'])) {
@@ -601,6 +724,11 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
           $out['data'] = l($out['data'], $out['data']);
       }
     }
+  }
+  
+  // pass hidden attribute to output
+  if ($column['hidden'] == TRUE) {
+    $out['hidden'] = TRUE;
   }
     
   // return formatted data
@@ -620,7 +748,7 @@ function _webform_report_format_data($raw, $cid, $type, $format = '') {
  * @param sorton
  *   list of default sort parameters
  */
-function _webform_report_sort(&$headers, &$rows, $sorton) {
+function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
 
   // will be empty if user has not clicked on a header
   $init = !isset($_GET['order']);
@@ -632,42 +760,46 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
 
   // if inital display (no column header has been clicked)
   if ($init) {
-    // and no sort parameters
-    if (count($sorton) == 0) {
-      // we must sort on first column, that is what theme_table defaults to
-      $headers[0]['sort'] = 'asc';
-      $code = 'return ' . _webform_report_sort_column(0, FALSE, $headers[0]['type']) . ';';
-    }
-    // otherwise setup initial sort, if specified
-    else {
+  
+    // if sort parameters given
+    if (count($sorton) > 0) {
+      
+      // init variables
       $a = array();
-
+      $cid = 0;
+      $ord = '';
+      
       // loop through sorts      
-      foreach ($sorton as $index => $sort) {
-        // find the header
-        foreach ($headers as $hindex => $header) {
-            
-          if ($header['field'] == $sort['cid']) {
-
-            // mark the first sort header
-            if (count($a) == 0) {
+      foreach ($sorton as $sort) {
+        // find column to be sorted
+        foreach($columns as $index => $col) {
+          if ($sort['cid'] == $col['cid']) {
+            // save first sort column
+            if ($cid == 0) {
+              $cid = $sort['cid'];
               if ($sort['order'] == SORT_ASC) {
-                $headers[$hindex]['sort'] = 'asc';
+                $ord = 'asc';
               }
               else {
-                $headers[$hindex]['sort'] = 'desc';
+                $ord = 'desc';
               }
-            }   // end - if (count($a) == 0)...
-              
+            }
             // add the sort function
-            $a[] = _webform_report_sort_column($hindex, ($sort['order'] == SORT_DESC), $sort['type']);
+            $a[] = _webform_report_sort_column($index, ($sort['order'] == SORT_DESC), $sort['type']);
             break;
-            
-          }  // end - if ($header['field'])...
-        }   // end - foreach ($headers as...
+          }
+        }
       }   // end - foreach ($sorton...
       
-      // format the complete sort function
+      // flag the header with the first sort column
+      foreach ($headers as $index => $header) {
+        // mark the first sort header
+        if ($header['field'] == $cid) {
+          $headers[$index]['sort'] = $ord;
+          break;
+        }  // end - if ($header['field'])...
+      }   // end - foreach ($headers as... 
+      
       if (count($a) == 0) {
         // probably no columns
         $code = 'return 0;';
@@ -696,10 +828,10 @@ function _webform_report_sort(&$headers, &$rows, $sorton) {
   }
   // user has clicked on a column header - must sort that column
   else {
-    foreach ($headers as $hindex => $header) {
+    foreach ($headers as $index => $header) {
       if ($header['field'] == $ts['sql']) {
-        $headers[$hindex]['sort'] = $ts_order;
-        $code = 'return ' . _webform_report_sort_column($hindex, ($ts_order == 'desc'), $header['type']) . ';';
+        $headers[$index]['sort'] = $ts_order;
+        $code = 'return ' . _webform_report_sort_column($index, ($ts_order == 'desc'), $header['type']) . ';';
         break;
       }
     }
@@ -797,14 +929,24 @@ function _webform_report_pager($headers, $rows, $node) {
   // Grab the 'page' query parameter.
   // Taken from pager_query() in pager.inc
   $page = isset($_GET['page']) ? $_GET['page'] : '';
-  
   // Convert comma-separated $page to an array, used by other functions.
-  // Taken from pager_query() in pager.inc
   $pager_page_array = explode(',', $page);
-    
-  // format the table with the current page
   if ($page == '') $page = 0;
-  $output = theme_table($headers, $pages[$page], array('class' => 'webform_report'));
+  
+  // filter out hidden columns
+  $out = array();
+  foreach ($pages[$page] as $row) {
+    $outrow = array();
+    foreach ($row as $cell) {
+      if ($cell['hidden'] != TRUE) {
+        $outrow[] = $cell;
+      }
+    }
+    $out[] = $outrow;
+  }
+  
+  // format the table with the current page
+  $output = theme_table($headers, $out, array('class' => 'webform_report'));
     
   // Put some magic in the two global variables
   // Based on code in pager_query() in pager.inc
@@ -863,7 +1005,17 @@ function _webform_report_output_csv($headers, $rows) {
   foreach($rows as $row) {
     $tmp = array();
     foreach($row as $cell) {
-      $tmp[] = _webform_report_format_csv_column(strip_tags($cell['data']));
+      // output cell if not hidden
+      if (!array_key_exists('hidden', $cell)) {
+        // special handling for file types - use entire path
+        if (array_key_exists('path', $cell)) {
+          $data = $cell['path'];
+        }
+        else {
+          $data = strip_tags($cell['data']);
+        }
+        $tmp[] = _webform_report_format_csv_column($data);
+      }
     }
     $output .= implode(',', $tmp) . "\n";
   }
@@ -882,7 +1034,7 @@ function _webform_report_output_csv($headers, $rows) {
 function _webform_report_format_csv_column($value) {
 
   // if value contains a comma, it should be delimited by quotes
-  if (strpos($value, ',')) {
+  if (strpos($value, ',') !== FALSE) {
       // if value contains quotes, double the quotes
       if (strpos($value, '"')) {
         return '"' . str_replace('"', '""', $value) . '"';

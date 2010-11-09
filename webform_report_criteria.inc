@@ -53,6 +53,16 @@ function webform_report_criteria_form($form_state, $node) {
       'H:i' => 'hh:mm', 
       'h:i a' => 'hh:mm am/pm'
     );
+    $component_select_format_options = array(
+      '' => '', 
+      'KEY' => 'Display Key', 
+      'VALUE' => 'Display Value'
+    );
+    $component_select_options = array(
+      '' => '', 
+      'KEY' => 'Sort By Key', 
+      'VALUE' => 'Sort By Value'
+    );
   
     $columns = _webform_report_get_columns($node, $webform_components);
   
@@ -76,8 +86,9 @@ function webform_report_criteria_form($form_state, $node) {
         '#type' => 'markup',
         '#value' => $columns[$i]['name']
       );
+      
       $form['columns'][$i]['type'] = array(
-      '#type' => 'markup',
+        '#type' => 'markup',
         '#value' => $columns[$i]['type']
       );
   
@@ -95,6 +106,23 @@ function webform_report_criteria_form($form_state, $node) {
           '#options' => $component_time_format_options
         );
       }
+      if ($columns[$i]['type'] == 'select') {
+        $form['columns'][$i]['format'] = array(
+          '#type' => 'select',
+          '#default_value' => $columns[$i]['format'],
+          '#options' => $component_select_format_options
+        );
+        $form['columns'][$i]['option'] = array(
+          '#type' => 'select',
+          '#default_value' => $columns[$i]['option'],
+          '#options' => $component_select_options
+        );
+      }
+  
+      $form['columns'][$i]['hidden'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $columns[$i]['hidden']
+      );
   
       webform_report_criteria_form_list_buttons($form, $img_path, 'columns', $cid, $i, $cc);
     }
@@ -125,7 +153,9 @@ function webform_report_criteria_form($form_state, $node) {
       7 => t('is empty'), 
       8 => t('is not empty'),
       9 => t('greater than'), 
-      10 => t('less than')
+      10 => t('less than'),
+      11 => t('greater than or equal'),
+      12 => t('less than or equal')
     );
     
     // filters fieldset  
@@ -221,9 +251,16 @@ function webform_report_criteria_form($form_state, $node) {
       webform_report_criteria_form_list_buttons($form, $img_path, 'sorton', $cid, $i, $cc);
     }
     
+    // only allow sorts on report columns
+    $options = array();
+    $options[0] = t('Select a field');
+    foreach ($columns as $index => $col) {
+      $options[$col['cid']] = $col['name'];
+    }
+    
     $form['sorton']['addcomp'] = array(
       '#type' => 'select',
-      '#options' => $comp_options,
+      '#options' => $options,
       '#required' => FALSE
     );
   
@@ -376,6 +413,8 @@ function theme_webform_report_criteria_form($form) {
       t('Name'), 
       t('Type'), 
       t('Format'), 
+      t('Option'), 
+      t('Hidden'),
       array('data' => t('Operations'), 'colspan' => '5')
     );
     
@@ -387,6 +426,8 @@ function theme_webform_report_criteria_form($form) {
         drupal_render($form['columns'][$index]['name']),
         drupal_render($form['columns'][$index]['type']),
         drupal_render($form['columns'][$index]['format']),
+        drupal_render($form['columns'][$index]['option']),
+        drupal_render($form['columns'][$index]['hidden']),
         drupal_render($form['columns'][$index]['delete']),    
         drupal_render($form['columns'][$index]['top']), 
         drupal_render($form['columns'][$index]['up']),
@@ -552,7 +593,9 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       if ($list == 'columns') {
         $node->columns[] = array(
           'cid' => $cid,
-          'format' => ''
+          'format' => '',
+          'option' => '',
+          'hidden' => FALSE
         );
         $upd = TRUE;
       }
@@ -576,6 +619,16 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
   
   else if ($op == 'delete' && $index >= 0) {
     if ($list == 'columns') {
+      // remove any sort columns that are based on deleted column
+      $list = array();
+      foreach($node->sorton as $si => $sort) {
+        if ($sort['cid'] == $node->columns[$index]['cid']) {
+          $list[$si] = $si;
+        }
+      }
+      if (count($list) > 0) {
+        $node->sorton = array_values(array_diff_key($node->sorton, $list));
+      }
       $node->columns = array_values(array_diff_key($node->columns, array($index => $index)));
       $upd = TRUE;
     }
@@ -677,10 +730,12 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   // update lists
   foreach (element_children($form_state['values']['columns']) as $index) {
     if (is_numeric($index)) {
-      if (isset($form_state['values']['columns'][$index]['format'])) {
-        if (array_key_exists($index, $node->columns)) {
+      if (array_key_exists($index, $node->columns)) {
+        if (isset($form_state['values']['columns'][$index]['format'])) {
           $node->columns[$index]['format'] = $form_state['values']['columns'][$index]['format'];
+          $node->columns[$index]['option'] = $form_state['values']['columns'][$index]['option'];
         }
+        $node->columns[$index]['hidden'] = $form_state['values']['columns'][$index]['hidden'];
       }
     }
   }
