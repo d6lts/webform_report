@@ -813,7 +813,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
         $code = '';
         for ($i=0; $i<count($a); $i++) {
           if ($i < count($a) - 1) {
-            $code .= 'if (($tmp = ' . $a[0] . ') == 0) { ';
+            $code .= 'if (($tmp = ' . $a[$i] . ') == 0) { ';
           }
           else {
             $code .= '$tmp = ' . $a[$i] . '; ';
