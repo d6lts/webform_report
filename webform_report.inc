@@ -76,7 +76,7 @@ function _webform_report_get_columns($node, $components) {
           'name' => $components[$cid]['name'],
           'type' => $components[$cid]['type'],
           'format' => $node->columns[$i]['format'],
-          'option' => $node->columns[$i]['option'],
+          'option' => isset($node->columns[$i]['option'])?$node->columns[$i]['option']:'',
           'cid' => $node->columns[$i]['cid'],
           'hidden' => $node->columns[$i]['hidden'],
         );
@@ -117,7 +117,7 @@ function _webform_report_get_filters($node, $components) {
   }
 
   // check for search values - add filters for search
-  $search =  $_SESSION['search_form'][$node->nid];
+  $search = &$_SESSION['search_form'][$node->nid];
   if (is_array($search)) {
     $col = $search['column'];
     $val = $search['value'];
@@ -129,6 +129,7 @@ function _webform_report_get_filters($node, $components) {
           // exclude special links (view, edit, etc)
           if ($column['cid'] > -5) {
             $filters[] = array(
+              'name' => '',
               'type' => $column['type'],
               'ftype' => -1,
               'value' => $val,
@@ -141,6 +142,7 @@ function _webform_report_get_filters($node, $components) {
       else {
         if (array_key_exists($col, $columns)) {
           $filters[] = array(
+            'name' => '',
             'type' => $columns[$col]['type'],
             'ftype' => -1,
             'value' => $val,
@@ -769,7 +771,11 @@ function _webform_report_format_data($raw, $column) {
   
   // handle file type
   if ($column['type'] == 'file') {
-    $link = '&nbsp;';
+  
+    // init variables
+    $link = '';
+    $text = '';
+    $path = '';
     $text = '';
      
     // new file handling in webforms 6.x-3.x - data is an id
@@ -797,7 +803,7 @@ function _webform_report_format_data($raw, $column) {
       }
     }
     // output file column - save path for later
-    $out = array('data' => $link, 'field' => $cid, 'sort' => $text, 'path' => $path);
+    $out = array('data' => $link, 'field' => $column['cid'], 'sort' => $text, 'path' => $path);
   }
     
   // handle dates
@@ -887,7 +893,7 @@ function _webform_report_format_data($raw, $column) {
       }
       else {
         // set select value to friendly format (default)
-        $data .= $column['pairs'][$key];
+        $data .= isset($column['pairs'][$key]) ? $column['pairs'][$key] : '';
       }
       // set sort key - use key if selected
       if ($column['option'] == 'KEY') {
@@ -1137,7 +1143,8 @@ function _webform_report_pager($headers, $rows, $node) {
   foreach ($pages[$page] as $row) {
     $outrow = array();
     foreach ($row as $cell) {
-      if ($cell['hidden'] != TRUE) {
+      $hide = isset($cell['hidden']) ? $cell['hidden'] : FALSE;
+      if (!$hide) {
         $outrow[] = $cell;
       }
     }

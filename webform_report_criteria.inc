@@ -141,7 +141,7 @@ function webform_report_criteria_form($form_state, $node) {
     );
 
     // make sure we get report values  
-    unset($_SESSION['filter_values'][$node->nid]);
+    unset($_SESSION['search_form'][$node->nid]);
     
     $filters = _webform_report_get_filters($node, $webform_components);
 
@@ -853,9 +853,13 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
       if (array_key_exists($index, $node->columns)) {
         if (isset($form_state['values']['columns'][$index]['format'])) {
           $node->columns[$index]['format'] = $form_state['values']['columns'][$index]['format'];
+        }
+        if (isset($form_state['values']['columns'][$index]['option'])) {
           $node->columns[$index]['option'] = $form_state['values']['columns'][$index]['option'];
         }
-        $node->columns[$index]['hidden'] = $form_state['values']['columns'][$index]['hidden'];
+        if (isset($form_state['values']['columns'][$index]['hidden'])) {
+          $node->columns[$index]['hidden'] = $form_state['values']['columns'][$index]['hidden'];
+        }
       }
     }
   }
@@ -944,7 +948,7 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
     );
   
     // get current session search values
-    $search = $_SESSION['search_form'][$node->nid];
+    $search = &$_SESSION['search_form'][$node->nid];
     
     $default = '';
     if (is_array($search)) {
