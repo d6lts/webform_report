@@ -266,20 +266,34 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
         }
         // fields by cid for quick lookup
         $fields[$col['cid']] = $col['name'];
+        
         // Get mapping for select lists (Start)
         if ($col['type'] == 'select') {
+          // get component info
           $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = %d AND c.cid = %d", $node->wnid, $col['cid']);
           $r = db_fetch_object($result);
           $extra = unserialize($r->extra);
-          if (strpos($extra['items'],'|')){
-            $columns[$index]['pairs'] = array();
-            foreach (explode("\n",$extra['items']) as $pair){
-              list ($k,$v) = explode ('|',$pair);
-              $columns[$index]['pairs'][$k] = $v;
+          // load the webform select component handler
+          module_load_include('inc', 'webform', 'components/select');
+          // detect webforms 3.x and handle 
+          if (function_exists('_webform_select_options_callback')) {
+            // make a webform "component"
+            $wfcomp['extra'] = $extra;
+            // get select options
+            $columns[$index]['pairs'] = _webform_select_options($wfcomp);
+          }
+          // get options from webforms 2.x
+          else {
+            if (strpos($extra['items'],'|')){
+              $columns[$index]['pairs'] = array();
+              foreach (explode("\n",$extra['items']) as $pair){
+                list ($k,$v) = explode ('|',$pair);
+                $columns[$index]['pairs'][$k] = $v;
+              }
             }
           }
-       }
-       // Get mapping for select lists (End)
+        }
+        // Get mapping for select lists (End)
       }
       // add filter fields to lookup
       foreach ($filters as $index => $filter) {
@@ -802,21 +816,32 @@ function _webform_report_format_data($raw, $column) {
   
   // handle select type
   else if ($column['type'] == 'select') {
-    // save key value
-    $key = $raw[0];
-    // display key if wanted or if no key/value pairs exist
-    if ($column['format'] == 'KEY' || !array_key_exists('pairs', $column)) {
-      $data = $key;
-    }
-    else {
-      // set select value to friendly format (default)
-      $data = $column['pairs'][$key];
-    }
-    // set sort key - default is same as display
-    $sort = $data;
-    // change to key if selected
-    if ($column['option'] == 'KEY') {
-      $sort = $key;
+    $data = '';
+    $sort = '';
+    // process each key in case of multi-selects
+    for ($i=0; $i<count($raw); $i++) {
+      if ($i > 0) {
+        $data .= ',';
+        $sort .= ',';
+      }
+      // save key value
+      $key = $raw[$i];
+      // display key if wanted or if no key/value pairs exist
+      if ($column['format'] == 'KEY' || !array_key_exists('pairs', $column)) {
+        $data .= $key;
+      }
+      else {
+        // set select value to friendly format (default)
+        $data .= $column['pairs'][$key];
+      }
+      // set sort key - use key if selected
+      if ($column['option'] == 'KEY') {
+        $sort .= $key;
+      }
+      // otherwise use data
+      else {
+        $sort .= $column['pairs'][$key];
+      }
     }
     // save the value
     $out = array('data' => $data, 'field' => $column['cid'], 'sort' => $sort);
