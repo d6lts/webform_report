@@ -315,6 +315,10 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
           
           // empty raw data row
           $data = array();
+          
+          // save submitter uid and node nid
+          $data['uid'] = $row->uid;
+          $data['nid'] = $row->nid;
             
           // fill in meta fields
           if (array_key_exists(-1, $fields)) {
@@ -415,6 +419,10 @@ function _webform_report_test_filters($data, $filters, $columns) {
   
     // search flag
     $hit = FALSE;
+
+    // load submitter user and webform node for later
+    $submitter = user_load($data['uid']);
+    $wfnode = node_load($data['nid']);
     
     // loop through all filters  
     foreach($filters as $index => $filter) {
@@ -438,7 +446,20 @@ function _webform_report_test_filters($data, $filters, $columns) {
         
         // prepare filter values
         $filter_data = strip_tags(strtolower(trim($value['data'])));
-        $filter_value = strtolower(trim($filter['value']));
+        $filter_value = $filter['value'];
+        
+        // do token substitution, if installed
+        if (module_exists('token')) {
+          // replace globals
+          $filter_value = token_replace($filter_value);
+          // replace submitter user values
+          $filter_value = token_replace($filter_value, 'user', $submitter);
+          // replace webform node values
+          $filter_value = token_replace($filter_value, 'node', $wfnode);
+        }
+        
+        // normalize
+        $filter_value = strtolower(trim($filter_value));
         
         // flag eq, ne, gt, lt, ge, le compares
         $cmpflag = (
