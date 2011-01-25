@@ -43,6 +43,7 @@ function _webform_report_get_components($nid) {
   $components[-4] = array('name' => t('Submission IP Address'), 'type' => 'string');
   $components[-5] = array('name' => t('Edit Link'), 'type' => 'link');
   $components[-6] = array('name' => t('View Link'), 'type' => 'link');
+  $components[-7] = array('name' => t('Delete Link'), 'type' => 'link');
 
   // get components from webform  
   $result = db_query("SELECT c.cid, c.name, c.type FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
@@ -333,6 +334,9 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
           }
           if (array_key_exists(-6, $fields)) {
             $data[-6] = array(l('view', 'node/'. $row->nid . '/submission/' . $row->sid));
+          }
+          if (array_key_exists(-7, $fields)) {
+            $data[-7] = array(l('delete', 'node/'. $row->nid . '/submission/' . $row->sid . '/delete'));
           }
         }
       
