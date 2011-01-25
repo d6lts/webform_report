@@ -114,7 +114,41 @@ function _webform_report_get_filters($node, $components) {
       }
     }
   }
-  
+
+  // check for search values - add filters for search
+  $search =  $_SESSION['search_form'][$node->nid];
+  if (is_array($search)) {
+    $col = $search['column'];
+    $val = $search['value'];
+    if ($val != '') {
+      $columns = _webform_report_get_columns($node, $components);
+      // if all columns, add search filter for each column
+      if ($col == -1) {
+        foreach($columns as $index => $column) {
+          // exclude special links (view, edit, etc)
+          if ($column['cid'] > -5) {
+            $filters[] = array(
+              'type' => $column['type'],
+              'ftype' => -1,
+              'value' => $val,
+              'cid' => $column['cid']
+            );
+          }
+        }
+      }
+      // add search filter for specified column
+      else {
+        if (array_key_exists($col, $columns)) {
+          $filters[] = array(
+            'type' => $columns[$col]['type'],
+            'ftype' => -1,
+            'value' => $val,
+            'cid' => $columns[$col]['cid']
+          );
+        }
+      }
+    }
+  }
   return $filters;
 }
 
@@ -187,7 +221,7 @@ function _webform_report_get_data($node) {
  * @return 
  *   a string of text or a themed table
  */
-function _webform_report_get_body_content($node, $formatcsv = FALSE) {
+function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $formatcsv = FALSE) {
 
   $output = '';
   
@@ -196,7 +230,12 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
 
   // if any submissions
   if (!empty($rs)) {
-  
+
+    // display search form if desired
+    if ($node->options['search_form'] && $page) {
+      $output .= drupal_get_form('webform_report_search_form', $node);
+    }
+    
     // get report criteria
     $components = _webform_report_get_components($node->wnid);
     $columns = _webform_report_get_columns($node, $components);
@@ -260,7 +299,7 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
           if ($csid != 0) {
           
             // test submission against filters
-            if (_webform_report_test_filters($data, $filters)) {
+            if (_webform_report_test_filters($data, $filters, $columns)) {
               // output row if filters pass
               $rows[] = _webform_report_output($data, $columns);
             }
@@ -328,7 +367,7 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
       }
       // no submissions met criteria
       else {
-        $output = t('There are no submissions that match the criteria for the selected webform.');
+        $output .= t('There are no submissions that match the criteria for the selected webform.');
       }
       
     }   // end - if (count($columns) > 0)...
@@ -362,7 +401,7 @@ function _webform_report_get_body_content($node, $formatcsv = FALSE) {
  * @return 
  *   TRUE if filters passed, otherwise FALSE
  */
-function _webform_report_test_filters($data, $filters) {
+function _webform_report_test_filters($data, $filters, $columns) {
 
   // filter result, return true if no filters
   $ok = TRUE;
@@ -370,20 +409,28 @@ function _webform_report_test_filters($data, $filters) {
   // if any filters
   if (count($filters) > 0) {
   
+    // search flag
+    $hit = FALSE;
+    
     // loop through all filters  
     foreach($filters as $index => $filter) {
 
+      // reset result for each filter  
+      $ok = FALSE;
+        
       // check that cid is in data
       if (array_key_exists($filter['cid'], $data)) {
     
-        // reset result for each filter  
-        $ok = FALSE;
-        
         // get raw data
         $raw = $data[$filter['cid']];
         
         // format value
-        $value = _webform_report_format_data($raw, $filter['cid'], $filter['type']);
+        foreach ($columns as $col) {
+          if ($col['cid'] == $filter['cid']) {
+            break;
+          }
+        }
+        $value = _webform_report_format_data($raw, $col);
         
         // prepare filter values
         $filter_data = strip_tags(strtolower(trim($value['data'])));
@@ -422,9 +469,45 @@ function _webform_report_test_filters($data, $filters) {
           $filter_value = strtotime($filter_value);
         }
         
+        // extract filename for file types
+        if ($filter['type'] == 'file') {
+          $filter_data = '';
+          // new file handling in webforms 6.x-3.x - data is an id
+          if (is_numeric($raw[0])) {
+            // must load the webform file component handler
+            module_load_include('inc', 'webform', 'components/file');
+            $file = webform_get_file($raw[0]);
+            if (!empty($file->fid)) {
+              $filter_data = webform_file_name($file->filepath);
+            }
+          }
+          // file handling for prior versions of webforms - data is serialized fileinfo
+          else {
+            $tmp = unserialize($raw[0]);
+            if (!empty($tmp['filename'])) {
+              $filter_data = $tmp['filename'];
+            }
+          }
+        }
+        
         // apply filter
         switch($filter['ftype']) {
     
+          // search for x
+          case -1:
+            // convert submission date and time to strings
+            if ($filter['cid'] == -2) {
+              $filter_data = date('m/d/Y', $raw[0]);
+            }
+            if ($filter['cid'] == -3) {
+              $filter_data = date('H:m', $raw[0]);
+            }
+            if ($filter_data != '' && strpos($filter_data, $filter_value) !== FALSE) {
+              $hit = TRUE;
+              $ok = TRUE;
+            }
+            break;
+            
           // none
           case 0:
             $ok = TRUE;
@@ -515,6 +598,17 @@ function _webform_report_test_filters($data, $filters) {
           }   // end - switch($filter['type'])...
           
         }   // end - if (array_key_exists($filter['cid'], $data)...
+        
+        // if hit on search, quit - search filters are last,
+        // so any report filters have already been applied
+        if ($hit) {
+          break;
+        }
+        
+        // if last filter was search, keep going
+        if ($filter['ftype'] == -1) {
+          continue;
+        }
         
         // if filter did not pass, don't check any further
         if (!$ok) {
@@ -971,7 +1065,7 @@ function _webform_report_pager($headers, $rows, $node) {
  */
 function webform_report_csv($node) {
 
-  $output = _webform_report_get_body_content($node, TRUE);
+  $output = _webform_report_get_body_content($node, FALSE, FALSE, TRUE);
       
   $fname = 'wfr_export.csv';
   header('Content-Type: text/plain');
@@ -1045,3 +1139,4 @@ function _webform_report_format_csv_column($value) {
   }
   return $value;
 }
+

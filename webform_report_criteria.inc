@@ -307,6 +307,16 @@ function webform_report_criteria_form($form_state, $node) {
       '#default_value' => $default,
     );
     
+    $default = FALSE;  
+    if (array_key_exists('search_form', $node->options)) {
+      $default = $node->options['search_form'];
+    }
+    $form['options']['search_form'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display Search Form'),
+      '#default_value' => $default,
+    );
+    
     $form['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -760,9 +770,132 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   // update options
   $node->options['results_per_page'] = $form_state['values']['results_per_page'];
   $node->options['hide_csv'] = $form_state['values']['hide_csv'];
+  $node->options['search_form'] = $form_state['values']['search_form'];
 
   // update the node  
   node_save($node);
 
   drupal_set_message(t('Webform Report has been updated.'));
+}
+
+/**
+ * Generate a form for searching report data
+ *
+ * @param form_state
+ *   drupal form state
+ * *param node
+ *   current node object
+ * @return 
+ *   an array of form elements
+ */
+ function webform_report_search_form($form_state, $node) {
+  
+  $form = array();
+  
+  if (isset($node->wnid)) {  
+  
+    $webform_components = _webform_report_get_components($node->wnid);
+
+    $columns = _webform_report_get_columns($node, $webform_components);
+
+    $comp_options = array();
+    $comp_options[-1] = t('Search All Columns');
+    foreach($columns as $index => $comp) {
+      // don't include links in options
+      if ($index > -5) {
+        $comp_options[$index] = $comp['name'];
+      }
+    }
+  
+    // filters fieldset  
+    $form['search'] = array(
+      '#type' => 'fieldset', 
+      '#title' => t('Search Report'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => TRUE
+    );
+    
+    $form['search']['nid'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->nid
+    );
+  
+    // get current session search values
+    $search = $_SESSION['search_form'][$node->nid];
+    
+    $default = '';
+    if (is_array($search)) {
+      if (array_key_exists('column', $search)) {
+        $default = $search['column'];
+      }
+    }
+    $form['search']['column'] = array(
+      '#type' => 'select',
+      '#title' => t('Column to search'),
+      '#options' => $comp_options,
+      '#default_value' => $default,
+      '#required' => FALSE
+    );
+  
+    $default = '';
+    if (is_array($search)) {
+      if (array_key_exists('value', $search)) {
+        $default = $search['value'];
+      }
+    }
+    $form['search']['value'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Value to search for'),
+      '#default_value' => $default,
+      '#required' => FALSE
+    );
+
+    $form['search']['search'] = array(
+      '#type' => 'submit',
+      '#value' => t('Search'),
+      '#weight' => 1
+    );
+  
+    $form['search']['reset'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset'),
+      '#weight' => 2
+    );
+    
+  }   // end -   if (isset($node->wnid))...
+  
+  return $form;
+}
+
+/**
+ * Implementation of hook_submit for the report search form
+ *
+ * @param form_id
+ *   drupal form id
+ * @param form_state
+ *   drupal form state and values
+ */
+function webform_report_search_form_submit($form_id, $form_state) {
+
+  // get current node id
+  $nid = $form_state['values']['search']['nid'];
+  
+  // refresh
+  if ($form_state['values']['op'] == 'Search') {
+  
+    // save search values in session variable
+    // include node id so values will not be 
+    // used in other nodes
+    $_SESSION['search_form'][$nid] = array(
+      'column' => $form_state['values']['search']['column'],
+      'value' => $form_state['values']['search']['value']
+    );
+  }
+  
+  // reset
+  else {
+    unset($_SESSION['search_form'][$nid]);
+  }
+  
 }
