@@ -139,24 +139,15 @@ function webform_report_criteria_form($form_state, $node) {
       '#return_value' => 'columns_add',
       '#submit' => array('webform_report_criteria_form_list_submit')
     );
-  
-    $filters = _webform_report_get_filters($node, $webform_components);
+
+    // make sure we get report values  
+    unset($_SESSION['filter_values'][$node->nid]);
     
-    $filter_options = array(
-      0 => t('none'), 
-      1 => t('begins with'), 
-      2 => t('does not begin with'), 
-      3 => t('contains'), 
-      4 => t('does not contain'), 
-      5 => t('equals'), 
-      6 => t('does not equal'), 
-      7 => t('is empty'), 
-      8 => t('is not empty'),
-      9 => t('greater than'), 
-      10 => t('less than'),
-      11 => t('greater than or equal'),
-      12 => t('less than or equal')
-    );
+    $filters = _webform_report_get_filters($node, $webform_components);
+
+    $filter_options = _webform_report_get_filter_options();
+    
+    $filter_options_datetime = _webform_report_get_filter_options(TRUE);
     
     // filters fieldset  
     $form['filters'] = array(
@@ -169,10 +160,13 @@ function webform_report_criteria_form($form_state, $node) {
     // form list of report filters
     $cc = count($filters);
     $i = 0;
-    
+
     for ($i=0; $i<$cc; $i++) {
   
       $cid = $filters[$i]['cid'];
+      $type = $filters[$i]['type'];
+      $ftype = $filters[$i]['ftype'];
+      $value = $filters[$i]['value'];
   
       $form['filters'][$i]['name'] = array(
         '#type' => 'markup',
@@ -180,19 +174,24 @@ function webform_report_criteria_form($form_state, $node) {
       );
       $form['filters'][$i]['type'] = array(
         '#type' => 'markup',
-        '#value' => $filters[$i]['type']
+        '#value' => $type
       );
   
       $form['filters'][$i]['ftype'] = array(
         '#type' => 'select',
-        '#options' => $filter_options,
-        '#default_value' => $filters[$i]['ftype']
+        '#default_value' => $ftype
       );
-  
-      $form['filters'][$i]['value'] = array(
-        '#type' => 'textfield',
-        '#default_value' => $filters[$i]['value']
-      );
+
+      // use reduced options for date/time
+      if ($type == 'date' || $type == 'time') {
+        $form['filters'][$i]['ftype']['#options'] = $filter_options_datetime;
+      }
+      else {
+        $form['filters'][$i]['ftype']['#options'] = $filter_options;
+      }
+
+      // insert value field(s)      
+      webform_report_criteria_filter_value_field($form, $i, $type, $ftype, $value);
       
       webform_report_criteria_form_list_buttons($form, $img_path, 'filters', $cid, $i, $cc);
     }
@@ -317,6 +316,16 @@ function webform_report_criteria_form($form_state, $node) {
       '#default_value' => $default,
     );
     
+    $default = FALSE;  
+    if (array_key_exists('filter_form', $node->options)) {
+      $default = $node->options['filter_form'];
+    }
+    $form['options']['filter_form'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display Report Filter Form'),
+      '#default_value' => $default,
+    );
+    
     $form['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -329,6 +338,84 @@ function webform_report_criteria_form($form_state, $node) {
     return NULL;
   }
 }
+
+/**
+ * Insert filter value field(s)
+ *
+ * @param form
+ *   the form to add the fields to
+ * @param index
+ *   the filter index
+ * @param type
+ *   the filter column type
+ * @param ftype
+ *   the filter type
+ * @param value
+ *   the filter value
+ */
+function webform_report_criteria_filter_value_field(&$form, $index, $type, $ftype, $value) {
+  
+  // use a date popup for dates if date_popup module is enabled
+  $fieldtype = 'textfield';
+  if ($type == 'date') {
+    if (module_exists('date_popup')) {
+      $fieldtype = 'date_popup';
+    }
+  }
+  
+  // if filter type is 'between', extract the two values
+  if ($ftype == 13) {
+    $value = explode('|', $value);
+    if (count($value) == 1) {
+      $value[] = '';
+    }
+  }
+  
+  // if between, add two fields
+  if (is_array($value)) {
+    $form['filters'][$index]['value1'] = array(
+      '#type' => $fieldtype,
+      '#default_value' => $value[0]
+    );
+    if ($fieldtype == 'date_popup') {
+      $form['filters'][$index]['value1']['#date_format'] = 'm/d/Y';
+    }
+    // add a size if a textbox
+    else {
+      $form['filters'][$index]['value1']['#size'] = 15;
+    }
+    $form['filters'][$index]['value2'] = array(
+      '#type' => $fieldtype,
+      '#default_value' => $value[1]
+    );
+          
+    // if using popup, format the value correctly
+    if ($fieldtype == 'date_popup') {
+      $form['filters'][$index]['value2']['#date_format'] = 'm/d/Y';
+    }
+    // add a size if a textbox
+    else {
+      $form['filters'][$index]['value2']['#size'] = 15;
+    }
+  }
+  // otherwise, just add one field
+  else {
+    $form['filters'][$index]['value'] = array(
+      '#type' => $fieldtype,
+      '#default_value' => $value
+    );
+        
+    // if using popup, format the value correctly
+    if ($fieldtype == 'date_popup') {
+      $form['filters'][$index]['value']['#date_format'] = 'm/d/Y';
+    }
+    // add a size if a textbox
+    else {
+      $form['filters'][$index]['value']['#size'] = 40;
+    }
+  }   // end - if (is_array($value))...
+        
+}        
 
 /**
  * Add list buttons to a form
@@ -467,32 +554,55 @@ function theme_webform_report_criteria_form($form) {
   
   if (array_key_exists('filters', $form)) {
   
+    // see if an extra value column is present
+    $hasextra = FALSE;
+    foreach (element_children($form['filters']) as $index) {
+      if (array_key_exists('value1', $form['filters'][$index])) {
+        $hasextra = TRUE;
+        break;
+      }
+    }
     // theme filter list
-    $header = array(
-      t('Name'), 
-      t('Type'), 
-      t('Filter Type'), 
-      t('Filter Value'), 
-      array('data' => t('Operations'), 'colspan' => '5')
-    );
-    
     $rows = array();
-    
     foreach (element_children($form['filters']) as $index) {
   
-      $rows[] = array(
-        drupal_render($form['filters'][$index]['name']),
-        drupal_render($form['filters'][$index]['type']),
-        drupal_render($form['filters'][$index]['ftype']),
-        drupal_render($form['filters'][$index]['value']),
-        drupal_render($form['filters'][$index]['delete']),    
-        drupal_render($form['filters'][$index]['top']), 
-        drupal_render($form['filters'][$index]['up']),
-        drupal_render($form['filters'][$index]['down']),
-        drupal_render($form['filters'][$index]['end'])    
-      );
+      $row = array();
+      $row[] = drupal_render($form['filters'][$index]['name']);
+      $row[] = drupal_render($form['filters'][$index]['type']);
+      $row[] = drupal_render($form['filters'][$index]['ftype']);
+      if (array_key_exists('value1', $form['filters'][$index])) {
+         $row[] = drupal_render($form['filters'][$index]['value1']);
+         $row[] = drupal_render($form['filters'][$index]['value2']);
+      }
+      else {
+        if ($hasextra) {
+          $row[] = array('data' => drupal_render($form['filters'][$index]['value']), 'colspan' => '2');
+        }
+        else {
+          $row[] = drupal_render($form['filters'][$index]['value']);
+        }
+      }
+      $row[] = drupal_render($form['filters'][$index]['delete']);
+      $row[] = drupal_render($form['filters'][$index]['top']);
+      $row[] = drupal_render($form['filters'][$index]['up']);
+      $row[] = drupal_render($form['filters'][$index]['down']);
+      $row[] = drupal_render($form['filters'][$index]['end']);  
+      
+      $rows[] = $row;
     }
-  
+
+    $header = array();
+    $header[] = t('Name');
+    $header[] = t('Type');
+    $header[] = t('Filter Type');
+    if ($hasextra) {  
+      $header[] = array('data' => t('Filter Value(s)'), 'colspan' => '2');
+    }
+    else {
+      $header[] = t('Filter Value');
+    }
+    $header[] = array('data' => t('Operations'), 'colspan' => '5');
+    
     $form['filters']['table'] = array(
       '#value' => theme('table', $header, $rows)
     );
@@ -754,7 +864,19 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
     if (is_numeric($index)) {
       if (array_key_exists($index, $node->filters)) {
         $node->filters[$index]['type'] = $form_state['values']['filters'][$index]['ftype'];
-        $node->filters[$index]['value'] = $form_state['values']['filters'][$index]['value'];
+        // see if we have two values (between)
+        if (array_key_exists('value1', $form_state['values']['filters'][$index])) {
+          $v = array();
+          $v[] = $form_state['values']['filters'][$index]['value1'];
+          $v[] = $form_state['values']['filters'][$index]['value2'];
+          // combine the values
+          $value = implode('|', $v);
+        }
+        // just one value
+        else {
+          $value = $form_state['values']['filters'][$index]['value'];
+        }
+        $node->filters[$index]['value'] = $value;
       }
     }
   }

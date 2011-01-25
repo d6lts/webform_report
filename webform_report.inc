@@ -7,7 +7,7 @@
  * This file contains common functions and functions required
  * to ouput a report for the webform report module
  */
- 
+
 /**
  * Search for nodes of type webform and returns their nids and titles
  * in an associative array.
@@ -152,6 +152,36 @@ function _webform_report_get_filters($node, $components) {
   }
   return $filters;
 }
+
+/**
+ * return an array containing the webform report filter options
+ *
+ * @return 
+ *   an array of webform report filter options
+ */
+function _webform_report_get_filter_options($datetimeonly = FALSE) {
+
+  $opt = array();
+  
+  $opt[0] = t('none');
+  if (!$datetimeonly) {
+    $opt[1] = t('begins with');
+    $opt[2] = t('does not begin with');
+    $opt[3] = t('contains');
+    $opt[4] = t('does not contain');
+  }
+  $opt[5] = t('equals');
+  $opt[6] = t('does not equal');
+  $opt[7] = t('is empty');
+  $opt[8] = t('is not empty');
+  $opt[9] = t('greater than');
+  $opt[10] = t('less than');
+  $opt[11] = t('greater than or equal');
+  $opt[12] = t('less than or equal');
+  $opt[13] = t('between');
+  
+  return $opt;
+}  
 
 /**
  * return an associative array containing the webform report sort criteria
@@ -471,15 +501,25 @@ function _webform_report_test_filters($data, $filters, $columns) {
           // replace webform node values
           $filter_value = token_replace($filter_value, 'node', $wfnode);
         }
-        
+
         // normalize
         $filter_value = strtolower(trim($filter_value));
+
+        // extract filter values for between
+        if ($filter['ftype'] == 13) {
+            $filter_value = explode('|', $filter_value);
+            // should be two values
+            if (count($filter_value) == 1) {
+              $filter_value[] = '';
+            }
+        }        
         
-        // flag eq, ne, gt, lt, ge, le compares
+        // flag eq, ne, gt, lt, ge, le, between compares
         $cmpflag = (
           $filter['ftype'] == 5 || $filter['ftype'] == 6 ||
           $filter['ftype'] == 9 || $filter['ftype'] == 10 ||
-          $filter['ftype'] == 11 || $filter['ftype'] == 12
+          $filter['ftype'] == 11 || $filter['ftype'] == 12 || 
+          $filter['ftype'] == 13
         );
         
         // see if special date and time processing is required
@@ -492,8 +532,6 @@ function _webform_report_test_filters($data, $filters, $columns) {
           else {
             $filter_data = strtotime(date('m/d/Y', $raw[0]));
           }
-          // convert date value to timestamp
-          $filter_value = strtotime($filter_value);
         }
         if ($filter['type'] == 'time' && $cmpflag) {
           // user entered time
@@ -504,8 +542,16 @@ function _webform_report_test_filters($data, $filters, $columns) {
           else {
             $filter_data = strtotime(date('H:m', $raw[0]));
           }
-          // convert time value to timestamp
-          $filter_value = strtotime($filter_value);
+        }
+        // convert filter value to timestamp if necessary
+        if (($filter['type'] == 'date' || $filter['type'] == 'time') && $cmpflag) {
+          if (is_array($filter_value)) {
+            $filter_value[0] = strtotime($filter_value[0]); 
+            $filter_value[1] = strtotime($filter_value[1]); 
+          }
+          else {
+            $filter_value = strtotime($filter_value);
+          }
         }
         
         // extract filename for file types
@@ -567,14 +613,14 @@ function _webform_report_test_filters($data, $filters, $columns) {
             
           // Contains x.
           case 3:
-            if (strpos($filter_data, $filter_value) !== FALSE) {
+            if (!$filter_value || strpos($filter_data, $filter_value) !== FALSE) {
               $ok = TRUE;
             }
             break;
             
           // Does not contain x.
           case 4:
-            if (strpos($filter_data, $filter_value) === FALSE) {
+            if (!$filter_value || strpos($filter_data, $filter_value) === FALSE) {
               $ok = TRUE;
             }
             break;
@@ -631,6 +677,15 @@ function _webform_report_test_filters($data, $filters, $columns) {
           // less than or equal
           case 12: 
             if ($filter_data <= $filter_value) {
+              $ok = TRUE;
+            }
+            break;
+          
+          // between
+          case 13:
+            // negate filter if both values are empty
+            if ((!$filter_value[0] && !$filter_value[1]) ||       
+                ($filter_data >= $filter_value[0] && $filter_data <= $filter_value[1])) {
               $ok = TRUE;
             }
             break;
