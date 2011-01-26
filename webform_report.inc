@@ -528,7 +528,14 @@ function _webform_report_test_filters($data, $filters, $columns) {
         if ($filter['type'] == 'date' && $cmpflag) {
           // user entered date
           if ($filter['cid'] > 0) {
-            $filter_data = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
+            // webform 2.x stored dates as array elements
+            if (count($raw) > 1) {
+              $filter_data = strtotime($raw[0] .'/'. $raw[1] .'/'. $raw[2]);
+            }
+            // handle webform 3.x dates (yyyy-mm-dd)
+            else {
+              $filter_data = strtotime($raw[0]);
+            }
           }
           // submission date
           else {
