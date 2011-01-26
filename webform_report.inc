@@ -403,6 +403,11 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
         // sort
         _webform_report_sort($headers, $rows, $sorton, $columns);
         
+        // execute php code, if given
+        if (isset($node->options['php_code'])) {
+          eval('?>' . $node->options['php_code']);
+        }
+        
         // output in requested format  
         if ($formatcsv) {
           // format as csv

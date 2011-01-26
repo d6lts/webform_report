@@ -325,6 +325,38 @@ function webform_report_criteria_form($form_state, $node) {
       '#title' => t('Display Report Filter Form'),
       '#default_value' => $default,
     );
+
+    // PHP code fieldset - only shown if user has permission
+    if (user_access('use PHP code in webform reports')) {
+    
+      $code = isset($node->options['php_code']) ? $node->options['php_code'] : '';
+      
+      $form['php'] = array(
+        '#type' => 'fieldset', 
+        '#title' => t('PHP Code'),
+        '#collapsible' => TRUE,
+        '#collapsed' => empty($code),
+        '#description' => t('PHP processing code can be used to modify report values before the report is displayed.  <strong>This option should be used with <u>caution</u> as improper code can crash or damage a site.</strong>')
+      );
+
+      $form['php']['variables'] = array(
+        '#type' => 'markup',
+        '#value' => '<p>' . t('The following variables are available to thie code:') . '</p>' . theme('item_list', array(
+          '$node: ' . t('The webform report node object.'),
+          '$headers: ' . t('The report header array as input to <a href="http://api.drupal.org/api/drupal/includes--theme.inc/function/theme_table/6">theme_table</a>.'),
+          '$rows: ' . t('The report row array as input to <a href="http://api.drupal.org/api/drupal/includes--theme.inc/function/theme_table/6">theme_table</a> with additional keys <i>field</i> (field id), <i>sort</i> (value used to sort the column), and <i>hidden</i> (indicates if value is to be displayed on report).'),
+          )) . '<p>The <i>$headers</i> and <i>$rows</i> may be modifed in order to alter the report output.'
+      );
+      
+      $form['php']['php_code'] = array(
+        '#type' => 'textarea',
+        '#title' => t('PHP Processing Code'),
+        '#default_value' => $code,
+        '#cols' => 40,
+        '#rows' => 10,
+        '#description' => t('The PHP code must start with &lt;?php in order to be executed.')
+      );
+    }
     
     $form['update'] = array(
       '#type' => 'submit',
@@ -897,7 +929,10 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   $node->options['results_per_page'] = $form_state['values']['results_per_page'];
   $node->options['hide_csv'] = $form_state['values']['hide_csv'];
   $node->options['search_form'] = $form_state['values']['search_form'];
-
+  if (user_access('use PHP code in webform reports') && isset($form_state['values']['php_code'])) {
+    $node->options['php_code'] = $form_state['values']['php_code'];
+  }
+  
   // update the node  
   node_save($node);
 

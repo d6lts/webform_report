@@ -32,7 +32,7 @@ function webform_report_help($path) {
  * Implementation of hook_perm
  */
 function webform_report_perm() {
-  return array('access webform reports', 'create webform reports', 'edit webform reports', 'edit own webform reports');
+  return array('access webform reports', 'create webform reports', 'edit webform reports', 'edit own webform reports', 'use PHP code in webform reports');
 }
 
 /**
