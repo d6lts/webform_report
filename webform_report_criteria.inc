@@ -283,7 +283,11 @@ function webform_report_criteria_form($form_state, $node) {
       40 => '40', 
       60 => '60', 
       80 => '80', 
-      100 => '100'
+      100 => '100',
+      200 => '200',
+      300 => '300',
+      400 => '400',
+      500 => '500'
     );
     $default = 20;
     if (array_key_exists('results_per_page', $node->options)) {
