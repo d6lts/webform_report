@@ -125,7 +125,7 @@ function _webform_report_get_filters($node, $components) {
       $columns = _webform_report_get_columns($node, $components);
       // if all columns, add search filter for each column
       if ($col == -1) {
-        foreach($columns as $index => $column) {
+        foreach ($columns as $index => $column) {
           // exclude special links (view, edit, etc)
           if ($column['cid'] > -5) {
             $filters[] = array(
@@ -316,10 +316,10 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
           }
           // get options from webforms 2.x
           else {
-            if (strpos($extra['items'],'|')){
+            if (strpos($extra['items'], '|')) {
               $columns[$index]['pairs'] = array();
-              foreach (explode("\n",$extra['items']) as $pair){
-                list ($k,$v) = explode ('|',$pair);
+              foreach (explode("\n", $extra['items']) as $pair) {
+                list ($k, $v) = explode ('|', $pair);
                 $columns[$index]['pairs'][$k] = $v;
               }
             }
@@ -476,7 +476,7 @@ function _webform_report_test_filters($data, $filters, $columns) {
     $wfnode = node_load($data['nid']);
     
     // loop through all filters  
-    foreach($filters as $index => $filter) {
+    foreach ($filters as $index => $filter) {
 
       // reset result for each filter  
       $ok = FALSE;
@@ -590,7 +590,7 @@ function _webform_report_test_filters($data, $filters, $columns) {
         }
         
         // apply filter
-        switch($filter['ftype']) {
+        switch ($filter['ftype']) {
     
           // search for x
           case -1:
@@ -819,7 +819,7 @@ function _webform_report_format_data($raw, $column) {
   }
     
   // handle dates
-  else if ($column['type'] == 'date') {
+  elseif ($column['type'] == 'date') {
     $ts = 0;
     // if report date
     if ($column['cid'] > 0) {
@@ -854,7 +854,7 @@ function _webform_report_format_data($raw, $column) {
   }
     
   // handle times
-  else if ($column['type'] == 'time') {
+  elseif ($column['type'] == 'time') {
     $ts = 0;
     if ($column['cid'] > 0) {
       // handle webforms 6.x-3.x time
@@ -888,7 +888,7 @@ function _webform_report_format_data($raw, $column) {
   }
   
   // handle select type
-  else if ($column['type'] == 'select') {
+  elseif ($column['type'] == 'select') {
     $data = '';
     $sort = '';
     // process each key in case of multi-selects
@@ -989,7 +989,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
       // loop through sorts      
       foreach ($sorton as $sort) {
         // find column to be sorted
-        foreach($columns as $index => $col) {
+        foreach ($columns as $index => $col) {
           if ($sort['cid'] == $col['cid']) {
             // save first sort column
             if ($cid == 0) {
@@ -1021,7 +1021,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
         // probably no columns
         $code = 'return 0;';
       }
-      else if (count($a) == 1) {
+      elseif (count($a) == 1) {
         // only one clause, return it
         $code = 'return ' . $a[0] . ';';
       }
@@ -1105,9 +1105,9 @@ function _webform_report_page() {
    
     while ($node = db_fetch_object($result)) {
       $rows[] = array(
-        l($node->title,'node/' . $node->nid),
-        l(t('edit'), 'node/'.$node->nid.'/edit'),
-        l(t('delete'), 'node/'.$node->nid.'/delete')
+        l($node->title, 'node/' . $node->nid),
+        l(t('edit'), 'node/' . $node->nid . '/edit'),
+        l(t('delete'), 'node/' . $node->nid . '/delete')
       );
     }
   
@@ -1214,15 +1214,15 @@ function _webform_report_output_csv($headers, $rows) {
   
   // output headers
   $tmp = array();
-  foreach($headers as $header) {
+  foreach ($headers as $header) {
     $tmp[] .= _webform_report_format_csv_column($header['data']);
   }
   $output .= implode(',', $tmp) . "\n";
 
   // output rows
-  foreach($rows as $row) {
+  foreach ($rows as $row) {
     $tmp = array();
-    foreach($row as $cell) {
+    foreach ($row as $cell) {
       // output cell if not hidden
       if (!array_key_exists('hidden', $cell)) {
         // special handling for file types - use entire path

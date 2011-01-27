@@ -1,5 +1,11 @@
 <?php
-/* $Id$ */
+// $Id$ 
+
+/**
+ * @file
+ * This file contains the functions required to install
+ * the Webform Report module
+ */
 
 /**
  * Implementation of hook_install().
@@ -10,7 +16,7 @@ function webform_report_install() {
 } // function webform_report_install
 
 function webform_report_schema() {
-  $schema['webform_report'] = array (
+  $schema['webform_report'] = array(
     'fields' => array(
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
       'wnid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
@@ -36,7 +42,7 @@ function webform_report_uninstall() {
   // delete all webform reports
   $result = db_query("SELECT nid FROM {node} WHERE type = 'webform_report'");
 
-  while($webform_report_node = db_fetch_object($result)) {
+  while ($webform_report_node = db_fetch_object($result)) {
     node_delete($webform_report_node->nid);
   }
   node_type_delete('webform_report');
@@ -164,7 +170,7 @@ function webform_report_update_7() {
   while ($row = db_fetch_object($rs)) {
     // get the current component list
     $components = unserialize(stripslashes($row->components));
-    if(!is_array($components)) {
+    if (!is_array($components)) {
       $components = unserialize(base64_decode($components));
     } 
     // if has components
@@ -172,18 +178,18 @@ function webform_report_update_7() {
       // build component array - retain original order
       $comp = array();
       // meta columns first
-      $comp[-1] = null;
-      $comp[-2] = null;
-      $comp[-3] = null;
-      $comp[-4] = null;
-      $comp[-5] = null;
+      $comp[-1] = NULL;
+      $comp[-2] = NULL;
+      $comp[-3] = NULL;
+      $comp[-4] = NULL;
+      $comp[-5] = NULL;
       // insert all components
-      foreach($components as $cid => $value) {
+      foreach ($components as $cid => $value) {
         $comp[$cid] = $value;
       }
       // eliminate meta columns not used
       for ($i=-5; $i<=-1; $i++) {
-        if ($comp[$i] == null) {
+        if ($comp[$i] == NULL) {
           unset($comp[$i]);
         }
       }
@@ -241,13 +247,13 @@ function webform_report_update_6() {
 function webform_report_update_5() {
 
   $results = db_query("SELECT nid, kcid, filter_type, filter_value FROM {webform_report}");
-  while($result = db_fetch_object($results)) {
+  while ($result = db_fetch_object($results)) {
     $field = $result->kcid;
     $type = $result->filter_type;
     $value = $result->filter_value;
     $filters = array();
-    if(!empty($field) && !empty($type) && $type != 0){
-      $filters[] = array('field'=>$field, 'type'=>$type, 'value'=>$value);
+    if (!empty($field) && !empty($type) && $type != 0) {
+      $filters[] = array('field' => $field, 'type' => $type, 'value' => $value);
     }
     if (!db_query("UPDATE {webform_report} 
                    SET filters = '%s' 
@@ -307,25 +313,25 @@ function webform_report_update_3() {
 
   $option_results = db_query("SELECT nid, options FROM {webform_report}");
   $components = array();
-  while($option_result = db_fetch_object($option_results)) {
+  while ($option_result = db_fetch_object($option_results)) {
     $options = unserialize(stripslashes($option_result->options));
-    if(!empty($options->show_user)) {
+    if (!empty($options->show_user)) {
       $components[] = -1;
     }
-    if(!empty($options->show_date)) {
+    if (!empty($options->show_date)) {
       $components[] = -2;
     }
-    if(!empty($options->show_time)) {
+    if (!empty($options->show_time)) {
       $components[] = -3;
     }
-    if(!empty($options->show_ip)) {
+    if (!empty($options->show_ip)) {
       $components[] = -4;
     }
-    if(!empty($options->show_edit)) {
+    if (!empty($options->show_edit)) {
       $components[] = -5;
     }
     $component_results = db_query("SELECT cid FROM {webform_report_component} WHERE nid = '" . $option_result->nid . "'");
-    while($component_result = db_fetch_object($component_results)) {
+    while ($component_result = db_fetch_object($component_results)) {
       $components[] = $component_result->cid;
     }
     // Even though the components array is usually escaped with slashes, for some reason they are stripped here (grrrrr) so they must be base64 encoded
@@ -343,7 +349,7 @@ function webform_report_update_3() {
  */
 function webform_report_update_2() {
   $results = db_query("SELECT nid, options FROM {webform_report} ORDER BY nid");
-  while($result = db_fetch_object($results)) {
+  while ($result = db_fetch_object($results)) {
     $items[] = update_sql("UPDATE {webform_report} SET options = '" . addslashes(stripslashes($result->options)) . "' WHERE nid = '" . $result->nid . "'");
   }
   return $items;

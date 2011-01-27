@@ -1,6 +1,5 @@
 <?php
-
-// $Id:
+// $Id$
 
 /**
  * @file
@@ -24,7 +23,7 @@ function webform_report_criteria_form($form_state, $node) {
 
   module_load_include('inc', 'webform_report', 'webform_report');
 
-  $mod_path = drupal_get_path('module','webform_report');
+  $mod_path = drupal_get_path('module', 'webform_report');
   $img_path = $mod_path . "/images/";
 
   if (isset($node->wnid)) {  
@@ -38,7 +37,7 @@ function webform_report_criteria_form($form_state, $node) {
   
     $comp_options = array();
     $comp_options[0] = t('Select a field');
-    foreach($webform_components as $cid => $comp) {
+    foreach ($webform_components as $cid => $comp) {
       $comp_options[$cid] = $comp['name'];
     }
   
@@ -755,14 +754,14 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
         );
         $upd = TRUE;
       }
-      else if ($list == 'sorton') {
+      elseif ($list == 'sorton') {
         $node->sorton[] = array(
           'cid' => $cid,
           'order' => SORT_ASC
         );
         $upd = TRUE;
       }
-      else if ($list == 'filters') {
+      elseif ($list == 'filters') {
         $node->filters[] = array(
           'field' => $cid,
           'type' => 0,
@@ -773,11 +772,11 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
     }
   }
   
-  else if ($op == 'delete' && $index >= 0) {
+  elseif ($op == 'delete' && $index >= 0) {
     if ($list == 'columns') {
       // remove any sort columns that are based on deleted column
       $list = array();
-      foreach($node->sorton as $si => $sort) {
+      foreach ($node->sorton as $si => $sort) {
         if ($sort['cid'] == $node->columns[$index]['cid']) {
           $list[$si] = $si;
         }
@@ -788,11 +787,11 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       $node->columns = array_values(array_diff_key($node->columns, array($index => $index)));
       $upd = TRUE;
     }
-    else if ($list == 'sorton') {
+    elseif ($list == 'sorton') {
       $node->sorton = array_values(array_diff_key($node->sorton, array($index => $index)));
       $upd = TRUE;
     }
-    else if ($list == 'filters') {
+    elseif ($list == 'filters') {
       $node->filters = array_values(array_diff_key($node->filters, array($index => $index)));
       $upd = TRUE;
     }
@@ -803,10 +802,10 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
     if ($list == 'columns') {
       $clist = $node->columns;
     }
-    else if ($list == 'sorton') {
+    elseif ($list == 'sorton') {
       $clist = $node->sorton;
     }
-    else if ($list == 'filters') {
+    elseif ($list == 'filters') {
       $clist = $node->filters;
     }
     
@@ -821,7 +820,7 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       }
     }
   
-    else if ($op == 'up' && $cid != 0) {
+    elseif ($op == 'up' && $cid != 0) {
       if ($index > 0) {
           $tmp = $clist[$index];
           $clist[$index] = $clist[$index-1];
@@ -830,7 +829,7 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       $upd = TRUE;
     }
   
-    else if ($op == 'down' && $cid != 0) {
+    elseif ($op == 'down' && $cid != 0) {
       if ($index >= 0 && $index < count($clist)) {
           $tmp = $clist[$index];
           $clist[$index] = $clist[$index+1];
@@ -839,7 +838,7 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       $upd = TRUE;
     }
   
-    else if ($op == 'end' && $cid != 0) {
+    elseif ($op == 'end' && $cid != 0) {
       if ($index >= 0 && $index < count($clist)) {
         for ($i = $index; $i < count($clist) - 1; $i++) {
           $tmp = $clist[$i];
@@ -854,10 +853,10 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
       if ($list == 'columns') {
         $node->columns = $clist;
       }
-      else if ($list == 'sorton') {
+      elseif ($list == 'sorton') {
         $node->sorton = $clist;
       }
-      else if ($list == 'filters') {
+      elseif ($list == 'filters') {
         $node->filters = $clist;
       }
     }
@@ -965,7 +964,7 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
 
     $comp_options = array();
     $comp_options[-1] = t('Search All Columns');
-    foreach($columns as $index => $comp) {
+    foreach ($columns as $index => $comp) {
       // don't include links in options
       if ($index > -5) {
         $comp_options[$index] = $comp['name'];
