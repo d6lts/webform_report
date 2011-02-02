@@ -76,9 +76,9 @@ function _webform_report_get_columns($node, $components) {
           'name' => $components[$cid]['name'],
           'type' => $components[$cid]['type'],
           'format' => $node->columns[$i]['format'],
-          'option' => isset($node->columns[$i]['option'])?$node->columns[$i]['option']:'',
+          'option' => isset($node->columns[$i]['option']) ? $node->columns[$i]['option'] : '',
           'cid' => $node->columns[$i]['cid'],
-          'hidden' => $node->columns[$i]['hidden'],
+          'hidden' => isset($node->columns[$i]['hidden']) ? $node->columns[$i]['hidden'] : FALSE,
         );
       }
     }
@@ -265,7 +265,7 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
   if (!empty($rs)) {
 
     // display search form if desired
-    if ($node->options['search_form'] && $page) {
+    if (isset($node->options['search_form']) && $node->options['search_form'] && $page) {
       $output .= drupal_get_form('webform_report_search_form', $node);
     }
     
@@ -967,17 +967,14 @@ function _webform_report_format_data($raw, $column) {
  */
 function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
 
-  // will be empty if user has not clicked on a header
-  $init = !isset($_GET['order']);
-  
   // get current sort - 'name' key is column name, 'sql' is cid
   $ts = tablesort_get_order($headers);
   // get sort order
   $ts_order = tablesort_get_sort($headers);
 
   // if inital display (no column header has been clicked)
-  if ($init) {
-  
+  if (!isset($_GET['order'])) {
+
     // if sort parameters given
     if (count($sorton) > 0) {
       
@@ -1041,14 +1038,23 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
         }
         $code .= 'return $tmp;';
       }
-    }
-  }
-  // user has clicked on a column header - must sort that column
-  else {
+    }   // end - if (count($sorton) > 0)...
+  }   // end - if ($init)...
+  
+  // user has clicked on a column header or no sort criteria specified
+  // must sort on current table sort column
+  if (!isset($code)) {
+    // find header to be sorted
     foreach ($headers as $index => $header) {
       if ($header['field'] == $ts['sql']) {
         $headers[$index]['sort'] = $ts_order;
-        $code = 'return ' . _webform_report_sort_column($index, ($ts_order == 'desc'), $header['type']) . ';';
+        break;
+      }
+    }
+    // find column to be sorted
+    foreach ($columns as $index => $col) {
+      if ($col['cid'] == $ts['sql']) {
+        $code = 'return ' . _webform_report_sort_column($index, ($ts_order == 'desc'), $col['type']) . ';';
         break;
       }
     }
@@ -1078,11 +1084,11 @@ function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
   }
   // for all other types, handle as string
   else {
-    $code = "strcasecmp(\$a[$index]['sort'], \$b[$index]['sort'])";
+    $code = "strcasecmp(\$a[$index]['sort'],\$b[$index]['sort'])";
   }
   // invert output for descending sort
   if ($desc) {
-    $code = $code . ' * -1';
+    $code = $code . '*-1';
   }
   $code = '(' . $code . ')';
 

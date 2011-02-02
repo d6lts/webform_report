@@ -182,7 +182,6 @@ function webform_report_theme() {
   
   $theme = array(
     'webform_report_criteria_form' => array('arguments' => array('form' => NULL)),
-    'webform_report_filter_form' => array('arguments' => array('form' => NULL))
   );
   
   return $theme;

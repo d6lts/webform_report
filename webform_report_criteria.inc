@@ -319,16 +319,6 @@ function webform_report_criteria_form($form_state, $node) {
       '#default_value' => $default,
     );
     
-    $default = FALSE;  
-    if (array_key_exists('filter_form', $node->options)) {
-      $default = $node->options['filter_form'];
-    }
-    $form['options']['filter_form'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Display Report Filter Form'),
-      '#default_value' => $default,
-    );
-
     // PHP code fieldset - only shown if user has permission
     if (user_access('use PHP code in webform reports')) {
     
