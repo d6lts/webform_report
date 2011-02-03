@@ -289,7 +289,7 @@ function webform_report_criteria_form($form_state, $node) {
       500 => '500'
     );
     $default = 20;
-    if (array_key_exists('results_per_page', $node->options)) {
+    if (is_array($node->options) && array_key_exists('results_per_page', $node->options)) {
       $default = $node->options['results_per_page'];
     }
     $form['options']['results_per_page'] = array(
@@ -300,7 +300,7 @@ function webform_report_criteria_form($form_state, $node) {
     );
 
     $default = FALSE;  
-    if (array_key_exists('hide_csv', $node->options)) {
+    if (is_array($node->options) && array_key_exists('hide_csv', $node->options)) {
       $default = $node->options['hide_csv'];
     }
     $form['options']['hide_csv'] = array(
@@ -310,7 +310,7 @@ function webform_report_criteria_form($form_state, $node) {
     );
     
     $default = FALSE;  
-    if (array_key_exists('search_form', $node->options)) {
+    if (is_array($node->options) && array_key_exists('search_form', $node->options)) {
       $default = $node->options['search_form'];
     }
     $form['options']['search_form'] = array(
