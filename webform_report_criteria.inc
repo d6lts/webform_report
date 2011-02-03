@@ -966,12 +966,11 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
       '#type' => 'fieldset', 
       '#title' => t('Search Report'),
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#tree' => TRUE
+      '#collapsed' => TRUE
     );
     
     $form['search']['nid'] = array(
-      '#type' => 'hidden',
+      '#type' => 'value',
       '#value' => $node->nid
     );
   
@@ -1033,17 +1032,17 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
 function webform_report_search_form_submit($form_id, $form_state) {
 
   // get current node id
-  $nid = $form_state['values']['search']['nid'];
+  $nid = $form_state['values']['nid'];
   
-  // refresh
-  if ($form_state['values']['op'] == 'Search') {
+  // search
+  if ($form_state['values']['op'] == $form_state['values']['search']) {
   
     // save search values in session variable
     // include node id so values will not be 
     // used in other nodes
     $_SESSION['search_form'][$nid] = array(
-      'column' => $form_state['values']['search']['column'],
-      'value' => $form_state['values']['search']['value']
+      'column' => $form_state['values']['column'],
+      'value' => $form_state['values']['value']
     );
   }
   
