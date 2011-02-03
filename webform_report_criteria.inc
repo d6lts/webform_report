@@ -954,10 +954,10 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
 
     $comp_options = array();
     $comp_options[-1] = t('Search All Columns');
-    foreach ($columns as $index => $comp) {
-      // don't include links in options
-      if ($index > -5) {
-        $comp_options[$index] = $comp['name'];
+    foreach ($columns as $index => $col) {
+      // don't include links or hidden columns in options
+      if ($index > -5 && !$col['hidden']) {
+        $comp_options[$index] = $col['name'];
       }
     }
   

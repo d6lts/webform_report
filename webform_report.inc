@@ -127,7 +127,8 @@ function _webform_report_get_filters($node, $components) {
       if ($col == -1) {
         foreach ($columns as $index => $column) {
           // exclude special links (view, edit, etc)
-          if ($column['cid'] > -5) {
+          // and hidden columns
+          if ($column['cid'] > -5 && !$column['hidden']) {
             $filters[] = array(
               'name' => '',
               'type' => $column['type'],
