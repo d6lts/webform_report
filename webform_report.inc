@@ -225,7 +225,7 @@ function _webform_report_get_sorton($node, $components) {
  * @return 
  *   a database query result set
  */
-function _webform_report_get_data($node) {
+function _webform_report_get_submissions($node) {
 
   if (isset($node->wnid)) {
     return db_query("
@@ -250,99 +250,155 @@ function _webform_report_get_data($node) {
  *
  * @param node 
  *   the current node object
- * @param formatcsv 
- *   if TRUE format the output as a CSV file
+ * @param teaser
+ *   if TRUE format the requested output is a teaser
+ * @param page
+ *   if TRUE format the requested output is a page
  * @return 
  *   a string of text or a themed table
  */
-function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $formatcsv = FALSE) {
+function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
 
-  $output = '';
+  // get report data
+  $report = _webform_report_get_report_data($node);
+
+  // webform report does not have any criteria
+  if (!isset($report['headers'])) {
+
+    $output = t('It appears that no criteria have been specified for this report. 
+      Please click on Report Criteria under Edit to add webform data to your report.');
+  }
   
-  // query submissions  
-  $rs = _webform_report_get_data($node);  
+  // the selected webform has no submissions.
+  elseif (!isset($report['rows'])) {
 
-  // if any submissions
-  if (!empty($rs)) {
+    $output = t('There are no submissions for the selected webform. Either the form
+       has not yet been completed by anyone, or the results have been cleared. This will not
+       prevent you from creating this report, but this message will be displayed on the report
+       page until someone submits the selected webform.');
+  }
+  
+  // output report
+  else {
 
     // display search form if desired
     if (isset($node->options['search_form']) && $node->options['search_form'] && $page) {
       $output .= drupal_get_form('webform_report_search_form', $node);
     }
     
-    // get report criteria
-    $components = _webform_report_get_components($node->wnid);
-    $columns = _webform_report_get_columns($node, $components);
+    // Display number of rows after description.
+    $output .= filter_xss_admin($node->description) . 
+               ' (' . count($report['rows']) . ' ' . t('results') . ') ';
+    if (!$node->options['hide_csv']) {
+      $output .= l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
+    }
     
-    // if any columns
-    if (count($columns) > 0) {
+    // output current page
+    $output .= _webform_report_pager($report['headers'], $report['rows'], $node);
+
+    // no submissions met criteria
+    if (count($report['rows']) == 0) {
+      $output .= t('There are no submissions that match the criteria for the selected webform.');
+    }
+  }
+
+  return $output;
+}
+
+/**
+ * Get webform report data
+ *
+ * @param node 
+ *   the current node object
+ * @return 
+ *   report array - keys 'headers' = report headers, 'rows' = report rows
+ */
+function _webform_report_get_report_data($node) {
+
+  $report = array();
+  
+  // get report criteria
+  $components = _webform_report_get_components($node->wnid);
+  $columns = _webform_report_get_columns($node, $components);
     
+  // if any columns
+  if (count($columns) > 0) {
+    
+    $headers = array();
+    $fields = array();
+    
+    // set column headers and field info
+    foreach ($columns as $index => $col) {
+      if ($col['hidden'] != TRUE) {
+        // set report header - also save type for later
+        $headers[] = array(
+          'data' => $col['name'],
+          'field' => $col['cid'],
+          'type' => $col['type']
+        );
+      }
+      // fields by cid for quick lookup
+      $fields[$col['cid']] = $col['name'];
+        
+      // Get mapping for select lists (Start)
+      if ($col['type'] == 'select') {
+        // get component info
+        $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = %d AND c.cid = %d", $node->wnid, $col['cid']);
+        $r = db_fetch_object($result);
+        $extra = unserialize($r->extra);
+        // load the webform select component handler
+        module_load_include('inc', 'webform', 'components/select');
+        // detect webforms 3.x and handle 
+        if (function_exists('_webform_select_options_callback')) {
+          // make a webform "component"
+          $wfcomp['extra'] = $extra;
+          // get select options
+          $columns[$index]['pairs'] = _webform_select_options($wfcomp);
+        }
+        // get options from webforms 2.x
+        else {
+          if (strpos($extra['items'], '|')) {
+            $columns[$index]['pairs'] = array();
+            foreach (explode("\n", $extra['items']) as $pair) {
+              list ($k, $v) = explode ('|', $pair);
+              $columns[$index]['pairs'][$k] = $v;
+            }
+          }
+        }
+      }   // end - if ($col['type'] == 'select')...
+      // Get mapping for select lists (End)
+    }   // end - foreach ($columns as $index => $col)...
+    
+    // query submissions  
+    $rs = _webform_report_get_submissions($node);  
+    if ($rs) {
+
       // get other report criteria
       $filters = _webform_report_get_filters($node, $components);
       $sorton = _webform_report_get_sorton($node, $components);
   
       // init values
-      $headers = array();
       $rows = array();
-      $fields = array();
       $csid = 0;
       
-      // set column headers
-      foreach ($columns as $index => $col) {
-        if ($col['hidden'] != TRUE) {
-          // set report header - also save type for later
-          $headers[] = array(
-            'data' => $col['name'],
-            'field' => $col['cid'],
-            'type' => $col['type']
-          );
-        }
-        // fields by cid for quick lookup
-        $fields[$col['cid']] = $col['name'];
-        
-        // Get mapping for select lists (Start)
-        if ($col['type'] == 'select') {
-          // get component info
-          $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = %d AND c.cid = %d", $node->wnid, $col['cid']);
-          $r = db_fetch_object($result);
-          $extra = unserialize($r->extra);
-          // load the webform select component handler
-          module_load_include('inc', 'webform', 'components/select');
-          // detect webforms 3.x and handle 
-          if (function_exists('_webform_select_options_callback')) {
-            // make a webform "component"
-            $wfcomp['extra'] = $extra;
-            // get select options
-            $columns[$index]['pairs'] = _webform_select_options($wfcomp);
-          }
-          // get options from webforms 2.x
-          else {
-            if (strpos($extra['items'], '|')) {
-              $columns[$index]['pairs'] = array();
-              foreach (explode("\n", $extra['items']) as $pair) {
-                list ($k, $v) = explode ('|', $pair);
-                $columns[$index]['pairs'][$k] = $v;
-              }
-            }
-          }
-        }
-        // Get mapping for select lists (End)
-      }
       // add filter fields to lookup
       foreach ($filters as $index => $filter) {
         // fields by cid for quick lookup
         $fields[$filter['cid']] = $filter['name'];
       }
+
+      // submission counter
+      $sc = 0;      
       
       // get column data
       while (TRUE) {
         
         // get next submission data
         $row = db_fetch_object($rs);
-      
+        
         // check for end of data or end of submission
         if (!$row || $row->sid != $csid) {
-          
+        
           // process data for this submission, if any
           if ($csid != 0) {
           
@@ -356,6 +412,9 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
           if (!$row) {
             break;
           }
+          
+          // count submission
+          $sc++;
           
           // set current submission id
           $csid = $row->sid;
@@ -401,6 +460,7 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
       
       // see if any rows are available
       if (count($rows) > 0) {
+
         // sort
         _webform_report_sort($headers, $rows, $sorton, $columns);
         
@@ -408,47 +468,20 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE, $fo
         if (isset($node->options['php_code'])) {
           eval('?>' . $node->options['php_code']);
         }
-        
-        // output in requested format  
-        if ($formatcsv) {
-          // format as csv
-          $output = _webform_report_output_csv($headers, $rows);
-        }
-        else {
-          // Display number of rows after description.
-          $output .= filter_xss_admin($node->description) . 
-                     ' (' . count($rows) . ' ' . t('results') . ') ';
-          if (!$node->options['hide_csv']) {
-            $output .= l(t('Download as CSV'), 'node/' . arg(1) . '/csv') . '</p>';
-          }
-          // output current page
-          $output .= _webform_report_pager($headers, $rows, $node);
-        }
-      }
-      // no submissions met criteria
-      else {
-        $output .= t('There are no submissions that match the criteria for the selected webform.');
       }
       
-    }   // end - if (count($columns) > 0)...
+      // save rows if any submissions were returned
+      if ($sc > 0) {
+        $report['rows'] = $rows;
+      }
+      
+    }   // end - if (!empty($rs))...
     
-    // webform report does not have any criteria
-    else {
-      $output = t('It appears that no criteria have been specified for this report. 
-        Please click on the Criteria tab to add webform data to your report.');
-    }
+    $report['headers'] = $headers;
     
-  }   // end - if (!empty($rs))...
+  }   // end -   if (count($columns) > 0)...
   
-  // the selected webform has no submissions.
-  else {
-    $output = t('There are no submissions for the selected webform. Either the form
-       has not yet been completed by anyone, or the results have been cleared. This will not
-       prevent you from creating this report, but this message will be displayed on the report
-       page until someone submits the selected webform.');
-  }
-  
-  return $output;
+  return $report;
 }
 
 /**
@@ -1159,15 +1192,17 @@ function _webform_report_pager($headers, $rows, $node) {
   
   // filter out hidden columns
   $out = array();
-  foreach ($pages[$page] as $row) {
-    $outrow = array();
-    foreach ($row as $cell) {
-      $hide = isset($cell['hidden']) ? $cell['hidden'] : FALSE;
-      if (!$hide) {
-        $outrow[] = $cell;
+  if (is_array($pages[$page])) {
+    foreach ($pages[$page] as $row) {
+      $outrow = array();
+      foreach ($row as $cell) {
+        $hide = isset($cell['hidden']) ? $cell['hidden'] : FALSE;
+        if (!$hide) {
+          $outrow[] = $cell;
+        }
       }
+      $out[] = $outrow;
     }
-    $out[] = $outrow;
   }
   
   // format the table with the current page
@@ -1191,18 +1226,130 @@ function _webform_report_pager($headers, $rows, $node) {
 /**
  * Output a webform report in CSV format
  *
+ * code adapted from Webform module
+ *
  * @param node
  *   the current node
  */
 function webform_report_csv($node) {
 
-  $output = _webform_report_get_body_content($node, FALSE, FALSE, TRUE);
+  return drupal_get_form('webform_report_export_form', $node);
+}
+
+/**
+ * Generate a form for exporting report data
+ *
+ * @param form_state
+ *   drupal form state
+ * @param node
+ *   current node object
+ * @return 
+ *   an array of form elements
+ */
+ function webform_report_export_form($form_state, $node) {
+  
+  $form = array();
+
+  // export fieldset  
+  $form['export'] = array(
+    '#type' => 'fieldset', 
+    '#title' => t('Export Options'),
+  );
+    
+  $form['export']['nid'] = array(
+    '#type' => 'value',
+    '#value' => $node->nid
+  );
+  
+  $format = array(
+    'text' => t('Text'),
+    'excel' => t('Excel')
+  );
+  
+  $form['export']['format'] = array(
+    '#type' => 'radios',
+    '#title' => t('Export format'),
+    '#options' => $format,
+    '#default_value' => 'text',
+  );
+
+  $delim = array(
+    ','  => t('Comma (,)'),
+    '\t' => t('Tab (\t)'),
+    ';'  => t('Semicolon (;)'),
+    ':'  => t('Colon (:)'),
+    '|'  => t('Pipe (|)'),
+    '.'  => t('Period (.)'),
+    ' '  => t('Space ( )'),
+  );
+  
+  $form['export']['delim'] = array(
+    '#type' => 'select',
+    '#title' => t('Delimiter'),
+    '#options' => $delim,
+    '#required' => TRUE
+  );
+  
+  $form['export']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Export'),
+    '#weight' => 1
+  );
+  
+  $form['return'] = array(
+    '#type' => 'markup',
+    '#value' => l(t('Return to Report'), 'node/'. $node->nid),
+  );
+  
+  return $form;
+}
+
+/**
+ * Implementation of hook_submit for the report export form
+ *
+ * @param form_id
+ *   drupal form id
+ * @param form_state
+ *   drupal form state and values
+ */
+function webform_report_export_form_submit($form_id, $form_state) {
+
+  $nid = $form_state['values']['nid'];
+  $format = $form_state['values']['format'];
+  $delim = $form_state['values']['delim'];
+  
+  $node = node_load($nid);
+
+  $report = _webform_report_get_report_data($node);
+  
+  if (isset($report['headers']) && isset($report['rows'])) {
       
-  $fname = 'wfr_export.csv';
-  header('Content-Type: text/plain');
-  header('Content-Length: ' . strlen($output));
-  header('Content-Disposition: attachment; filename="' . $fname . '"');
-  echo $output;
+    $output = _webform_report_output_csv($report['headers'], $report['rows'], $format, $delim);
+    
+    if ($format == 'excel') {
+      $ftype = 'xls';
+      $ctype = 'application/x-msexcel';
+    }
+    else {
+      if ($delim == '\t') {
+        $ftype = 'tsv';
+        $ctype = 'text/tab-separated-values';
+      }
+      else {
+        $ftype = 'csv';
+        $ctype = 'text/plain';
+      }
+    }
+    $fname = 'wfr_export.' . $ftype ;
+    
+    drupal_set_header('Content-Type: ' . $ctype);
+    drupal_set_header('Content-Length: ' . strlen($output));
+    drupal_set_header('Content-Disposition: attachment; filename="' . $fname . '"');
+    echo $output;
+    die();
+  }
+  
+  drupal_goto('/node/' . $nid);
 }
 
 /**
@@ -1212,19 +1359,36 @@ function webform_report_csv($node) {
  *   report headers
  * @param rows
  *   report rows
+ * @param format
+ *   report format
+ * @param delim
+ *   report delimiter
  * @return 
  *   CSV output
  */
-function _webform_report_output_csv($headers, $rows) {
+function _webform_report_output_csv($headers, $rows, $format = 'text', $delim = ',') {
 
   $output = '';
+  
+  // set delimiter to tab and output bof for excel
+  if ($format == 'excel') {
+    $delim = '\t';
+    if (function_exists('mb_convert_encoding')) {
+      $output .= chr(255) . chr(254);
+    }
+  }
+
+  // set tab delimiter
+  if ($delim == '\t') {
+    $delim = "\t";
+  }
   
   // output headers
   $tmp = array();
   foreach ($headers as $header) {
-    $tmp[] .= _webform_report_format_csv_column($header['data']);
+    $tmp[] .= _webform_report_format_csv_column($header['data'], $delim);
   }
-  $output .= implode(',', $tmp) . "\n";
+  $output .= _webform_report_format_csv_row($tmp, $format, $delim);
 
   // output rows
   foreach ($rows as $row) {
@@ -1239,10 +1403,10 @@ function _webform_report_output_csv($headers, $rows) {
         else {
           $data = strip_tags($cell['data']);
         }
-        $tmp[] = _webform_report_format_csv_column($data);
+        $tmp[] = _webform_report_format_csv_column($data, $delim);
       }
     }
-    $output .= implode(',', $tmp) . "\n";
+    $output .= _webform_report_format_csv_row($tmp, $format, $delim);
   }
 
   return $output;
@@ -1253,13 +1417,15 @@ function _webform_report_output_csv($headers, $rows) {
  *
  * @param value
  *   the value to format for CSV
+ * @param delim
+ *   the CSV delimiter
  * @return 
  *   CSV column
  */
-function _webform_report_format_csv_column($value) {
+function _webform_report_format_csv_column($value, $delim) {
 
-  // if value contains a comma, it should be delimited by quotes
-  if (strpos($value, ',') !== FALSE) {
+  // if value contains a delimiter, it should be enclosed in quotes
+  if (strpos($value, $delim) !== FALSE) {
       // if value contains quotes, double the quotes
       if (strpos($value, '"')) {
         return '"' . str_replace('"', '""', $value) . '"';
@@ -1271,3 +1437,23 @@ function _webform_report_format_csv_column($value) {
   return $value;
 }
 
+/**
+ * Format a CSV row
+ *
+ * @param row
+ *   an array of row values
+ * @param format
+ *   the CSV file format
+ * @param delim
+ *   the CSV delimiter
+ * @return 
+ *   the CSV row
+ */
+function _webform_report_format_csv_row($row, $format, $delim) {
+  
+  $txt = implode($delim, $row) . "\n";
+  if ($format == 'excel' && function_exists('mb_convert_encoding')) {
+    $txt = mb_convert_encoding($txt, 'UTF-16LE', 'UTF-8');
+  }  
+  return $txt;
+}
