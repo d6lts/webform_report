@@ -281,6 +281,8 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
   // output report
   else {
 
+    $output = '';
+    
     // display search form if desired
     if (isset($node->options['search_form']) && $node->options['search_form'] && $page) {
       $output .= drupal_get_form('webform_report_search_form', $node);
