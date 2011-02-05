@@ -37,8 +37,14 @@ function webform_report_criteria_form($form_state, $node) {
   
     $comp_options = array();
     $comp_options[0] = t('Select a field');
+    $filter_comp_options = array();
+    $filter_comp_options[0] = t('Select a field');
     foreach ($webform_components as $cid => $comp) {
       $comp_options[$cid] = $comp['name'];
+      // leave link options off filter component list
+      if ($cid > -5) {
+        $filter_comp_options[$cid] = $comp['name'];
+      }
     }
   
     $component_date_format_options = array(
@@ -197,7 +203,7 @@ function webform_report_criteria_form($form_state, $node) {
     
     $form['filters']['addcomp'] = array(
       '#type' => 'select',
-      '#options' => $comp_options,
+      '#options' => $filter_comp_options,
       '#required' => FALSE
     );
   
@@ -253,7 +259,10 @@ function webform_report_criteria_form($form_state, $node) {
     $options = array();
     $options[0] = t('Select a field');
     foreach ($columns as $index => $col) {
-      $options[$col['cid']] = $col['name'];
+      // don't include link columns
+      if ($col['cid'] > -5) {
+        $options[$col['cid']] = $col['name'];
+      }
     }
     
     $form['sorton']['addcomp'] = array(
