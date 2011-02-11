@@ -326,6 +326,7 @@ function webform_report_criteria_form($form_state, $node) {
       '#type' => 'checkbox',
       '#title' => t('Display Search Form'),
       '#default_value' => $default,
+      '#description' => t('Checking this option will display a search form on the report page.  Note: If site caching is enabled, the search form will not be displayed to anonymous users.')
     );
     
     // PHP code fieldset - only shown if user has permission

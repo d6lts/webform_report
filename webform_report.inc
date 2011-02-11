@@ -259,6 +259,8 @@ function _webform_report_get_submissions($node) {
  */
 function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
 
+  global $user;
+  
   // get report data
   $report = _webform_report_get_report_data($node);
 
@@ -285,7 +287,10 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
     
     // display search form if desired
     if (isset($node->options['search_form']) && $node->options['search_form'] && $page) {
-      $output .= drupal_get_form('webform_report_search_form', $node);
+      // do not show search form to anonymous users if caching is enabled
+      if ($user->uid > 0 || !$GLOBALS['conf']['cache']) {
+        $output .= drupal_get_form('webform_report_search_form', $node);
+      }
     }
     
     // Display number of rows after description.
