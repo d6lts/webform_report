@@ -194,7 +194,7 @@ function webform_report_theme() {
 function webform_report_load($node) {
 
   // Populate webform_report-specific node variables
-  $additions = db_fetch_object(db_query("SELECT wnid, description, columns, sorton, filters, options
+  $additions = db_fetch_object(db_query("SELECT wnid, description, `columns`, sorton, filters, options
                                          FROM {webform_report} WHERE nid = %d", $node->nid));
 
   if (is_object($additions)) {
@@ -237,7 +237,7 @@ function webform_report_insert($node) {
   $node->filters = array();
   $node->options = array();
   
-  db_query("INSERT INTO {webform_report} (nid, description, wnid, columns, sorton, filters, options)
+  db_query("INSERT INTO {webform_report} (nid, description, wnid, `columns`, sorton, filters, options)
             VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s')", 
             $node->nid, 
             $node->description, 
@@ -258,7 +258,7 @@ function webform_report_update($node) {
   if (arg(2) == 'add' | arg(2) == 'edit') {
     if (arg(4) == 'criteria') {
       db_query("UPDATE {webform_report} 
-                SET columns = '%s', 
+                SET `columns` = '%s', 
                     sorton = '%s', 
                     filters = '%s', 
                     options = '%s'
