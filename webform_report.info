@@ -1,4 +1,3 @@
-; $id$
 name = Webform Report
 description = Allows users to create reports from webform data.
 dependencies[] = webform
