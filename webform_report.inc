@@ -446,13 +446,13 @@ function _webform_report_get_report_data($node) {
             $data[-4] = array($row->remote_addr);
           }
           if (array_key_exists(-5, $fields)) {
-            $data[-5] = array(l('edit', 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'));
+            $data[-5] = array(l(t('edit'), 'node/'. $row->nid . '/submission/' . $row->sid . '/edit'));
           }
           if (array_key_exists(-6, $fields)) {
-            $data[-6] = array(l('view', 'node/'. $row->nid . '/submission/' . $row->sid));
+            $data[-6] = array(l(t('view'), 'node/'. $row->nid . '/submission/' . $row->sid));
           }
           if (array_key_exists(-7, $fields)) {
-            $data[-7] = array(l('delete', 'node/'. $row->nid . '/submission/' . $row->sid . '/delete'));
+            $data[-7] = array(l(t('delete'), 'node/'. $row->nid . '/submission/' . $row->sid . '/delete'));
           }
         }
       
