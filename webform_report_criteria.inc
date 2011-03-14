@@ -20,6 +20,7 @@ function webform_report_criteria_form($form_state, $node) {
   
   global $user;
 
+  drupal_add_css(drupal_get_path('module', 'webform_report') . '/webform_report.css');
   module_load_include('inc', 'webform_report', 'webform_report');
 
   $mod_path = drupal_get_path('module', 'webform_report');
@@ -39,10 +40,14 @@ function webform_report_criteria_form($form_state, $node) {
     $filter_comp_options = array();
     $filter_comp_options[0] = t('Select a field');
     foreach ($webform_components as $cid => $comp) {
-      $comp_options[$cid] = $comp['name'];
+      $opt = $comp['name'];
+      if (strlen($opt) > 50) {
+        $opt = substr($opt, 0, 50) . '...';
+      }
+      $comp_options[$cid] = $opt;
       // leave link options off filter component list
       if ($cid > -5) {
-        $filter_comp_options[$cid] = $comp['name'];
+        $filter_comp_options[$cid] = $opt;
       }
     }
   
@@ -254,19 +259,9 @@ function webform_report_criteria_form($form_state, $node) {
       webform_report_criteria_form_list_buttons($form, $img_path, 'sorton', $cid, $i, $cc);
     }
     
-    // only allow sorts on report columns
-    $options = array();
-    $options[0] = t('Select a field');
-    foreach ($columns as $index => $col) {
-      // don't include link columns
-      if ($col['cid'] > -5) {
-        $options[$col['cid']] = $col['name'];
-      }
-    }
-    
     $form['sorton']['addcomp'] = array(
       '#type' => 'select',
-      '#options' => $options,
+      '#options' => $filter_comp_options,
       '#required' => FALSE
     );
   
@@ -582,7 +577,7 @@ function theme_webform_report_criteria_form($form) {
     );
     
     $form['columns']['addtable'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
     );
   }
   
@@ -652,7 +647,7 @@ function theme_webform_report_criteria_form($form) {
     );
     
     $form['filters']['addtable'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
     );
   }
    
@@ -697,7 +692,7 @@ function theme_webform_report_criteria_form($form) {
     );
   
     $form['sorton']['addtable'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
     );
   }
   

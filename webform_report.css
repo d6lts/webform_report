@@ -31,3 +31,7 @@ table.webform_report tr.even td {
 table.webform_report tr:hover td {
   background: #ffffcc;
 }
+
+.webform-report-criteria-add-block {
+  width: auto;
+}
