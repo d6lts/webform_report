@@ -322,6 +322,18 @@ function webform_report_criteria_form($form_state, $node) {
       '#default_value' => $default,
       '#description' => t('Checking this option will display a search form on the report page.  Note: If site caching is enabled, the search form will not be displayed to anonymous users.')
     );
+
+    $default = 'REPORT';  
+    if (is_array($node->options) && array_key_exists('layout', $node->options)) {
+      $default = $node->options['layout'];
+    }
+    $form['options']['layout'] = array(
+      '#type' => 'select',
+      '#title' => t('Report Layout'),
+      '#options' => array('REPORT' => t('Report'), 'SUBMISSION' => t('Submission')),
+      '#default_value' => $default,
+      '#description' => t('Choose the report layout.')
+    );
     
     // PHP code fieldset - only shown if user has permission
     if (user_access('use PHP code in webform reports')) {
@@ -926,6 +938,7 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   $node->options['results_per_page'] = $form_state['values']['results_per_page'];
   $node->options['hide_csv'] = $form_state['values']['hide_csv'];
   $node->options['search_form'] = $form_state['values']['search_form'];
+  $node->options['layout'] = $form_state['values']['layout'];
   if (user_access('use PHP code in webform reports') && isset($form_state['values']['php_code'])) {
     $node->options['php_code'] = $form_state['values']['php_code'];
   }
