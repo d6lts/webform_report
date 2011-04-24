@@ -511,10 +511,6 @@ function _webform_report_test_filters($data, $filters, $columns) {
     // search flag
     $hit = FALSE;
 
-    // load submitter user and webform node for later
-    $submitter = user_load($data['uid']);
-    $wfnode = node_load($data['nid']);
-    
     // loop through all filters  
     foreach ($filters as $index => $filter) {
 
@@ -539,8 +535,17 @@ function _webform_report_test_filters($data, $filters, $columns) {
         $filter_data = strip_tags(strtolower(trim($value['data'])));
         $filter_value = $filter['value'];
         
-        // do token substitution, if installed
-        if (module_exists('token')) {
+        // Do token substitution, if installed - AFTER checking whether the
+        // value might even contain a token (because token_replace is really
+        // resource intensive. Look for presence of TOKEN_PREFIX first.)
+        if (module_exists('token') && strpos($filter_value, TOKEN_PREFIX) !== FALSE) {
+          // load submitter user and webform node if not done
+          if (!isset($submitter)) {
+            $submitter = user_load($data['uid']);
+          }
+          if (!isset($wfnode)) {
+            $wfnode = node_load($data['nid']);
+          }
           // replace globals
           $filter_value = token_replace($filter_value);
           // replace submitter user values
