@@ -1430,17 +1430,12 @@ function _webform_report_output_csv($headers, $rows, $format = 'text', $delim = 
  */
 function _webform_report_format_csv_column($value, $delim) {
 
-  // if value contains a delimiter, it should be enclosed in quotes
-  if (strpos($value, $delim) !== FALSE) {
-      // if value contains quotes, double the quotes
-      if (strpos($value, '"')) {
-        return '"' . str_replace('"', '""', $value) . '"';
-      }
-      else {
-        return '"' . $value . '"';
-      }
-  }
-  return $value;
+  // Replace single quotes with double quotes, replace CRLF with LF
+  $value = str_replace(array('"', "\r\n"),
+                       array('""', "\n"),
+                       $value);
+
+  return '"' . $value . '"';
 }
 
 /**
