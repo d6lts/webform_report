@@ -1189,6 +1189,12 @@ function _webform_report_pager($headers, $rows, $node) {
     $pages[0] = $rows;
   }
   
+  // set report layout
+  $layout = 'REPORT';
+  if (array_key_exists('layout', $node->options)) {
+    $layout = $node->options['layout'];
+  }
+  
   // Grab the 'page' query parameter.
   // Taken from pager_query() in pager.inc
   $page = isset($_GET['page']) ? $_GET['page'] : '';
@@ -1211,8 +1217,13 @@ function _webform_report_pager($headers, $rows, $node) {
     }
   }
   
-  // format the table with the current page
-  $output = theme_table($headers, $out, array('class' => 'webform_report'));
+  if ($layout == 'REPORT') {
+    // format the table with the current page
+    $output = theme_table($headers, $out, array('class' => 'webform_report'));
+  }
+  else {
+    $output = webform_report_format_submissions($headers, $out);
+  }
     
   // Put some magic in the two global variables
   // Based on code in pager_query() in pager.inc
@@ -1227,6 +1238,45 @@ function _webform_report_pager($headers, $rows, $node) {
   $output .= theme('pager', NULL, $results_per_page, 0);
 
   return $output;
+}
+
+/**
+ * Output webform report submissions
+ *
+ * @param headers
+ *   the field headers
+ * @param rows
+ *   the fields
+ */
+function webform_report_format_submissions($headers, $rows) {
+
+  $out = array();
+  foreach ($rows as $row) {
+    $output = '';
+    for ($i=0; $i<count($row); $i++) {
+      $output .= '<div class="webform-report-submission-cell">';
+      $output .= '<div class="webform-report-submission-header">';
+      if (is_array($headers[$i])) {
+        $output .= $headers[$i]['data'];
+      }
+      else {
+        $output .= $headers[$i];
+      }
+      $output .= '</div>';
+      $output .= '<div class="webform-report-submission-data">';
+      if (is_array($row[$i])) {
+        $output .= $row[$i]['data']; 
+      }
+      else {
+        $output .= $row[$i];
+      }
+      $output .= '</div>';
+      $output .= '</div>';
+    }    
+    $out[] = array($output);
+  }
+
+  return theme_table(array(), $out, array('class' => 'webform_report webform-report-submission'));
 }
 
 /**

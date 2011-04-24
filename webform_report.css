@@ -35,3 +35,13 @@ table.webform_report tr:hover td {
 .webform-report-criteria-add-block {
   width: auto;
 }
+
+table.webform-report-submission {
+  width: 100%;
+}
+.webform-report-submission-cell {
+  margin: 5px;
+}
+.webform-report-submission-header {
+  font-weight: bold;
+}
