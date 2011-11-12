@@ -27,17 +27,34 @@ function webform_report_help($path) {
   }
 }
 
+
 /**
- * Implementation of hook_perm
+ * Implementation of hook_permission
  */
-function webform_report_perm() {
-  return array('access webform reports', 'create webform reports', 'edit webform reports', 'edit own webform reports', 'use PHP code in webform reports');
+function webform_report_permission() {
+  return array(
+    'access webform reports' => array(
+      'title' => t('Access Webform Reports'),
+    ),
+    'create webform reports' => array(
+      'title' => t('Create Webform Reports'),
+    ),
+    'edit webform reports' => array(
+      'title' => t('Edit Webform Reports'),
+    ),
+    'edit own webform reports' => array(
+      'title' => t('Edit Own Webform Reports'),
+    ),
+    'use php code' => array(
+      'title' => t('Use PHP Code in Webform Reports'),
+    ),
+  );
 }
 
 /**
  * Implementation of hook_access
  */
-function webform_report_access($op, $node) {
+function webform_report_node_access($node, $op, $account) {
 
   global $user;
   
@@ -45,58 +62,55 @@ function webform_report_access($op, $node) {
     case 'view':
       // if node is published, return view access
       if ($node->status) {
-        return user_access('access webform reports');
+        if (user_access('access webform reports')) {
+          return NODE_ACCESS_ALLOW;
+        }
+        else {
+          return NODE_ACCESS_DENY;
+        }
       }
       // if unpublished, return update access - users who can update the node should be able to view it
       else  {
-        return node_access('update', $node);
+        if (node_access('update', $node)) {
+          return NODE_ACCESS_ALLOW;
+        }
+        else {
+          return NODE_ACCESS_DENY;
+        }
       }
       break;
     case 'create':
-      return user_access('create webform reports');
+      if (user_access('create webform reports')) {
+          return NODE_ACCESS_ALLOW;
+        }
+        else {
+          return NODE_ACCESS_DENY;
+        }
       break;
     case 'update':
     case 'delete':
-      return user_access("edit webform reports") || (user_access("edit own webform reports") && ($user->uid == $node->uid));
+      if (user_access("edit webform reports") || (user_access("edit own webform reports") && ($user->uid == $node->uid))) {
+        return NODE_ACCESS_ALLOW;
+      }
+      else {
+        return NODE_ACCESS_DENY;
+      }
       break;
   }
 }
 
 /**
- * Implementation of hook_db_rewrite_sql(), to prevent webform_reports from being
- * displayed on the front page (promoted) while view access to them is denied
- * the current role. Don't ask, just smile and nod.
+ * Implementation of hook_query_node_access_alter(), to prevent access to webform_reports
+ * when current user does not have access
  */
-function webform_report_db_rewrite_sql($query, $primary_table, $primary_field, $args) {
-  switch ($primary_field) {
-    case 'nid':
-      // this query deals with node objects
-      $return = array();
-      if (!user_access('access webform reports')) {
-        if ($primary_table != 'n' && $primary_table != 'node') {
-          $return['join'] = "LEFT JOIN {node} n ON $primary_table.nid = n.nid";
-          $return['where'] = "n.type <> 'webform_report'";
-        }
-        else {
-          if ($primary_table == 'n') {
-            $return['where'] = "n.type <> 'webform_report'";
-          }
-          if ($primary_table == 'node') {
-            $return['where'] = "node.type <> 'webform_report'";
-          }
-        }
-        return $return;
-      }
-      break;
-    case 'tid':
-      // this query deals with taxonomy objects
-      break;
-    case 'vid':
-      // this query deals with vocabulary objects
-      break;
+function webform_report_query_node_access_alter(QueryAlterableInterface $query) {
+
+  if (!user_access('access webform reports')) {
+    $wfr_and = db_and();
+    $wfr_and->condition('type', 'webform_report', '<>');
+    $query->condition($wfr_and);
   }
 }
-
 
 /**
  * Implementation of hook_menu()
@@ -118,7 +132,7 @@ function webform_report_menu() {
     'title' => t('Configuration'),
     'page callback' => 'node_page_edit',
     'page arguments' => array(1),
-    'access callback' => 'webform_report_access',
+    'access callback' => 'node_access',
     'access arguments' => array('update', 1),
     'weight' => 1,
     'type' => MENU_DEFAULT_LOCAL_TASK
@@ -127,7 +141,7 @@ function webform_report_menu() {
     'title' => t('Report Criteria'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
-    'access callback' => 'webform_report_access',
+    'access callback' => 'node_access',
     'access arguments' => array('update', 1),
     'file' => 'webform_report_criteria.inc',
     'weight' => 2,
@@ -137,7 +151,7 @@ function webform_report_menu() {
     'title' => t('Report CSV Export'),
     'page callback' => 'webform_report_csv',
     'page arguments' => array(1),
-    'access callback' => 'webform_report_access',
+    'access callback' => 'node_access',
     'access arguments' => array('view', 1),
     'file' => 'webform_report.inc',
     'type' => MENU_CALLBACK
@@ -166,10 +180,8 @@ function webform_report_node_info() {
   return array(
     'webform_report' => array(
       'name' => t('Webform report'),
-      'module' => 'webform_report',
-      'description' => t('A webform report is a dynamic page that contains user-specified data
-      collected by the Webform module. The data can be sorted by a particular field, and fields can
-      be included/excluded as needed.')
+      'base' => 'webform_report',
+      'description' => t('A webform report is a dynamic page that contains user-specified data collected by the Webform module. The data can be sorted by a particular field, and fields can be included/excluded as needed.'),
     )
   );
 }
@@ -180,7 +192,12 @@ function webform_report_node_info() {
 function webform_report_theme() {
   
   $theme = array(
-    'webform_report_criteria_form' => array('arguments' => array('form' => NULL)),
+    'webform_report_view' => array(
+      'variables' => array('node' => NULL, 'view_mode' => NULL),
+    ),
+    'webform_report_criteria_form' => array(
+      'render element' => 'form',
+     ),
   );
   
   return $theme;
@@ -190,41 +207,74 @@ function webform_report_theme() {
 /**
  * Implementation of hook_load
  */
-function webform_report_load($node) {
+function webform_report_load($nodes) {
 
-  // Populate webform_report-specific node variables
-  $additions = db_fetch_object(db_query("SELECT wnid, description, `columns`, sorton, filters, options
-                                         FROM {webform_report} WHERE nid = %d", $node->nid));
-
-  if (is_object($additions)) {
-    $additions->columns = unserialize($additions->columns);
-    $additions->sorton = unserialize($additions->sorton);
-    $additions->filters = unserialize($additions->filters);
-    $additions->options = unserialize($additions->options);
+  foreach ($nodes as $node) {
+  
+    $report = db_query(
+      "SELECT * FROM {webform_report} WHERE nid = :nid", 
+      array(':nid' => $node->nid))->fetchObject();
+    
+    if (empty($report)) {
+      $report = stdClass();
+      $report->wnid = 0;
+      $report->columns = array();
+      $report->sorton = array();
+      $report->filters = array();
+      $report->options = array();
+    }
+    else {
+      $report->columns = unserialize($report->columns);
+      $report->sorton = unserialize($report->sorton);
+      $report->filters = unserialize($report->filters);
+      $report->options = unserialize($report->options);
+    }
+    
+    foreach ($report as $key => $value) {
+      $nodes[$node->nid]->$key = $value;
+    }
   }
-
-  return $additions;
 }
 
 /**
  * Implementation of hook_view
  */
-function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
+function webform_report_view($node, $view_mode) {
 
-  if (!empty($node->nid) && empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
-    drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
+  // no teasers for now
+  if ($view_mode == 'teaser') {
+    return $node;
   }
-  module_load_include('inc', 'webform_report', 'webform_report');
-  // include search form
-  module_load_include('inc', 'webform_report', 'webform_report_criteria');
   
-  $output = _webform_report_get_body_content($node, $teaser, $page);
-  
-  $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
-  $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
+  $node->content['webform_report'] = array(
+    '#markup' => theme('webform_report_view', array('node' => $node, 'view_mode' => $view_mode)),
+    '#weight' => 10
+  );
   
   return $node;
 }
+
+/**
+ * Theming function for webform_report_view
+ */
+function theme_webform_report_view($variables) {
+
+  $node = $variables['node'];
+  $view_mode = $variables['view_mode'];
+
+  if ($node->type != 'webform_report' || !isset($node->wnid) || $node->wnid == 0) {
+    drupal_set_message(t('Unable to display webform report - possibly damaged node.'), 'error');
+    return '';
+  }
+  
+  module_load_include('inc', 'webform_report', 'webform_report');
+  module_load_include('inc', 'webform_report', 'webform_report_criteria');
+  
+  $output = _webform_report_get_body_content($node, $view_mode);
+  
+  return $output;
+}
+
 
 /**
  * Implementation of hook_insert
@@ -236,16 +286,17 @@ function webform_report_insert($node) {
   $node->filters = array();
   $node->options = array();
   
-  db_query("INSERT INTO {webform_report} (nid, description, wnid, `columns`, sorton, filters, options)
-            VALUES (%d, '%s', %d, '%s', '%s', '%s', '%s')", 
-            $node->nid, 
-            $node->description, 
-            $node->wnid, 
-            serialize($node->columns), 
-            serialize($node->sorton), 
-            serialize($node->filters), 
-            serialize($node->options));
-  watchdog('webform_report', 'Webform report @title added', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
+  db_insert('webform_report')
+    ->fields(array(
+      'nid' => $node->nid,
+      'description' => $node->description,
+      'wnid' => $node->wnid,
+      'columns' => serialize($node->columns),
+      'sorton' => serialize($node->sorton),
+      'filters' => serialize($node->filters),
+      'options' => serialize($node->options),
+    ))
+    ->execute();  
 }
 
 /**
@@ -253,26 +304,17 @@ function webform_report_insert($node) {
  */
 function webform_report_update($node) {
 
-  // What to update, based on url arguments.
-  if (arg(2) == 'add' | arg(2) == 'edit') {
-    if (arg(4) == 'criteria') {
-      db_query("UPDATE {webform_report} 
-                SET `columns` = '%s', 
-                    sorton = '%s', 
-                    filters = '%s', 
-                    options = '%s'
-                WHERE nid = %d", 
-                serialize($node->columns), 
-                serialize($node->sorton), 
-                serialize($node->filters), 
-                serialize($node->options), 
-                $node->nid);
-    }
-    else {
-      db_query("UPDATE {webform_report} SET description = '%s' WHERE nid = %d", $node->description, $node->nid);
-      watchdog('webform_report', 'Webform report @title updated', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
-    }
-  }
+  db_update('webform_report')
+    ->fields(array(
+      'description' => $node->description,
+      'wnid' => $node->wnid,
+      'columns' => serialize($node->columns),
+      'sorton' => serialize($node->sorton),
+      'filters' => serialize($node->filters),
+      'options' => serialize($node->options),
+    ))
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -280,8 +322,9 @@ function webform_report_update($node) {
  */
 function webform_report_delete($node) {
 
-  db_query("DELETE FROM {webform_report} WHERE nid = %d", $node->nid);
-  watchdog('webform_report', 'Webform report @title deleted', array('@title' => $node->title), WATCHDOG_NOTICE); // log it
+  db_delete('webform_report')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -296,8 +339,8 @@ function webform_report_form($node) {
     '#title' => t('Title'),
     '#required' => TRUE,
     '#default_value' => $node->title,
-    '#weight' => -9,
-    '#description' => t('Enter a title for your Webform report page')
+    '#weight' => 1,
+    '#description' => t('Enter a title for your Webform report page'),
   );
   $default = '';
   if (isset($node->description)) {
@@ -309,24 +352,26 @@ function webform_report_form($node) {
     '#description' => t('The description will be displayed at the top of the report page'),
     '#default_value' => $default,
     '#required' => FALSE,
-    '#weight' => -8
+    '#weight' => 2,
   );
   // if adding a new report, ask for the webform
-  if (arg(1) == 'add') {
+  if (!isset($node->nid)) {
     $form['wnid'] = array(
       '#type' => 'select',
       '#title' => t('Webform'),
       '#options' => array('' => t('Select a Webform')) + _webform_report_get_webforms(),
       '#required' => TRUE,
-      '#weight' => -7,
-      '#description' => t('Select a webform for this report.')
+      '#weight' => 3,
+      '#description' => t('Select a webform for this report.'),
     );
   }
   // if report already exists, only display the report title
   else {
     $default = '';
     if (isset($node->wnid)) {
-      $default = check_plain(db_result(db_query("SELECT n.title FROM {node} n WHERE n.nid = %d", $node->wnid)));
+      $default = check_plain(
+        db_query("SELECT n.title FROM {node} n WHERE n.nid = :nid", array(':nid' => $node->wnid))->fetchField()
+      );
     }
     else {
       drupal_set_message(t('Error - Webform is not set for this report - cannot proceed.  Please delete and re-create this report.'), 'error');
@@ -335,7 +380,7 @@ function webform_report_form($node) {
       '#type' => 'textfield',
       '#title' => t('Webform'),
       '#default_value' => $default,
-      '#weight' => -7,
+      '#weight' => 3,
       '#attributes' => array('readonly' => 'readonly'),
       '#description' => t('The webform for this report - this cannot be updated.'),
      );

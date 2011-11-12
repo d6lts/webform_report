@@ -14,9 +14,6 @@ Dependencies
 This module requires the webform module, and will use the accents module to
 correctly sort columns of accented characters, if installed and enabled.
 
-Translation
------------
-French translation will soon be available.
 
 Todo:
 -----

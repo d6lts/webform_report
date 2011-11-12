@@ -1,6 +1,6 @@
 Requirements
 ------------
-Drupal 6.x
+Drupal 7.x
 
 Installation
 ------------

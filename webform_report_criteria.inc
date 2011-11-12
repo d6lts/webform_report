@@ -16,7 +16,7 @@
  * @return 
  *   an array of form elements
  */
-function webform_report_criteria_form($form_state, $node) {
+function webform_report_criteria_form($form, &$form_state, $node) {
   
   global $user;
 
@@ -31,7 +31,7 @@ function webform_report_criteria_form($form_state, $node) {
     $webform_components = _webform_report_get_components($node->wnid);
     
     $form['nid'] = array(
-      '#type' => 'hidden',
+      '#type' => 'value',
       '#value' => $node->nid
     );
   
@@ -92,13 +92,11 @@ function webform_report_criteria_form($form_state, $node) {
       $cid = $columns[$i]['cid'];
   
       $form['columns'][$i]['name'] = array(
-        '#type' => 'markup',
-        '#value' => $columns[$i]['name']
+        '#markup' => $columns[$i]['name']
       );
       
       $form['columns'][$i]['type'] = array(
-        '#type' => 'markup',
-        '#value' => $columns[$i]['type']
+        '#markup' => $columns[$i]['type']
       );
   
       if ($columns[$i]['type'] == 'date') {
@@ -178,12 +176,10 @@ function webform_report_criteria_form($form_state, $node) {
       $value = $filters[$i]['value'];
   
       $form['filters'][$i]['name'] = array(
-        '#type' => 'markup',
-        '#value' => $filters[$i]['name']
+        '#markup' => $filters[$i]['name']
       );
       $form['filters'][$i]['type'] = array(
-        '#type' => 'markup',
-        '#value' => $type
+        '#markup' => $type
       );
   
       $form['filters'][$i]['ftype'] = array(
@@ -242,12 +238,10 @@ function webform_report_criteria_form($form_state, $node) {
       $cid = $sorton[$i]['cid'];
   
       $form['sorton'][$i]['name'] = array(
-        '#type' => 'markup',
-        '#value' => $sorton[$i]['name']
+        '#markup' => $sorton[$i]['name']
       );
       $form['sorton'][$i]['type'] = array(
-        '#type' => 'markup',
-        '#value' => $sorton[$i]['type']
+        '#markup' => $sorton[$i]['type']
       );
   
       $form['sorton'][$i]['order'] = array(
@@ -349,8 +343,7 @@ function webform_report_criteria_form($form_state, $node) {
       );
 
       $form['php']['variables'] = array(
-        '#type' => 'markup',
-        '#value' => '<p>' . t('The following variables are available to thie code:') . '</p>' . theme('item_list', array(
+        '#markup' => '<p>' . t('The following variables are available to thie code:') . '</p>' . theme('item_list', array(
           '$node: ' . t('The webform report node object.'),
           '$headers: ' . t('The report header array as input to <a href="http://api.drupal.org/api/drupal/includes--theme.inc/function/theme_table/6">theme_table</a>.'),
           '$rows: ' . t('The report row array as input to <a href="http://api.drupal.org/api/drupal/includes--theme.inc/function/theme_table/6">theme_table</a> with additional keys <i>field</i> (field id), <i>sort</i> (value used to sort the column), and <i>hidden</i> (indicates if value is to be displayed on report).'),
@@ -502,10 +495,10 @@ function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $ci
   }
   else {
     $form[$list][$index]['top'] = array(
-      '#type' => 'markup'
+      '#markup' => ''
     );
     $form[$list][$index]['up'] = array(
-      '#type' => 'markup'
+      '#markup' => ''
     );
   }
   if ($index < $count-1) {
@@ -526,10 +519,10 @@ function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $ci
   }
   else {
     $form[$list][$index]['down'] = array(
-      '#type' => 'markup'
+      '#markup' => ''
     );
     $form[$list][$index]['end'] = array(
-      '#type' => 'markup'
+      '#markup' => ''
     );
   }
 }
@@ -542,7 +535,9 @@ function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $ci
  * @return
  *   the rendered form
  */
-function theme_webform_report_criteria_form($form) {
+function theme_webform_report_criteria_form($variables) {
+
+  $form = $variables['form'];
 
   if (array_key_exists('columns', $form)) {
   
@@ -575,7 +570,7 @@ function theme_webform_report_criteria_form($form) {
     }
   
     $form['columns']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows))
     );
   
     $header = array(
@@ -587,9 +582,8 @@ function theme_webform_report_criteria_form($form) {
       drupal_render($form['columns']['addcomp']), 
       drupal_render($form['columns']['add'])
     );
-    
     $form['columns']['addtable'] = array(
-      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('webform-report-criteria-add-block'))))
     );
   }
   
@@ -645,7 +639,7 @@ function theme_webform_report_criteria_form($form) {
     $header[] = array('data' => t('Operations'), 'colspan' => '5');
     
     $form['filters']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows))
     );
   
     $header = array(
@@ -659,7 +653,7 @@ function theme_webform_report_criteria_form($form) {
     );
     
     $form['filters']['addtable'] = array(
-      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('webform-report-criteria-add-block'))))
     );
   }
    
@@ -690,7 +684,7 @@ function theme_webform_report_criteria_form($form) {
     }
   
     $form['sorton']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows))
     );
   
     $header = array(
@@ -704,11 +698,11 @@ function theme_webform_report_criteria_form($form) {
     );
   
     $form['sorton']['addtable'] = array(
-      '#value' => theme('table', $header, $rows, array('class' => 'webform-report-criteria-add-block'))
+      '#markup' => theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('class' => array('webform-report-criteria-add-block'))))
     );
   }
   
-  return drupal_render($form);
+  return drupal_render_children($form);
 }
 
 /**
@@ -959,7 +953,7 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
  * @return 
  *   an array of form elements
  */
- function webform_report_search_form($form_state, $node) {
+ function webform_report_search_form($form, $form_state, $node) {
   
   $form = array();
   

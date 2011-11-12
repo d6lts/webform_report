@@ -12,14 +12,18 @@
  * in an associative array.
  */
 function _webform_report_get_webforms() {
-  $webforms = array();
-  $webform_types = variable_get('webform_node_types', array('webform'));
-  $placeholders = db_placeholders($webform_types, 'varchar');
-  $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type in ($placeholders)"), $webform_types);
 
-  while ($row = db_fetch_object($result)) {
-    $webforms[$row->nid] = t($row->title);
+  $webforms = array();
+
+  $query = db_select('node', 'n');
+  $query->fields('n');
+  $query->condition('n.type', 'webform', '=');
+  $query->addTag('node_access');
+  $result = $query->execute();
+  while ($record = $result->fetchObject()) {
+    $webforms[$record->nid] = t($record->title);
   }
+  
   return $webforms;
 }
 
@@ -45,8 +49,11 @@ function _webform_report_get_components($nid) {
   $components[-7] = array('name' => t('Delete Link'), 'type' => 'link');
 
   // get components from webform  
-  $result = db_query("SELECT c.cid, c.name, c.type FROM {webform_component} c WHERE c.type <> 'fieldset' AND c.nid = %d ORDER BY c.weight", $nid);
-  while ($row = db_fetch_object($result)) {
+  $result = db_query("SELECT c.cid, c.name, c.type 
+                      FROM {webform_component} c 
+                      WHERE c.type <> 'fieldset' AND c.nid = :nid 
+                      ORDER BY c.weight", array(':nid' => $nid));
+  foreach ($result as $row) {
     $components[$row->cid] = array('name' => filter_xss($row->name), 'type' => $row->type);
   }
   
@@ -236,8 +243,8 @@ function _webform_report_get_submissions($node) {
       LEFT JOIN {users} u ON s.uid = u.uid
       WHERE d.nid = c.nid 
       AND c.nid = s.nid
-      AND s.nid = %d
-      ORDER BY d.sid, c.cid, d.no", $node->wnid);
+      AND s.nid = :nid
+      ORDER BY d.sid, c.cid, d.no", array(':nid' => $node->wnid));
   }
   else {
     return NULL;
@@ -249,17 +256,13 @@ function _webform_report_get_submissions($node) {
  *
  * @param node 
  *   the current node object
- * @param teaser
- *   if TRUE format the requested output is a teaser
- * @param page
- *   if TRUE format the requested output is a page
  * @return 
  *   a string of text or a themed table
  */
-function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
+function _webform_report_get_body_content($node, $view_mode) {
 
   global $user;
-  
+
   // get report data
   $report = _webform_report_get_report_data($node);
 
@@ -285,10 +288,10 @@ function _webform_report_get_body_content($node, $teaser=FALSE, $page=FALSE) {
     $output = '';
     
     // display search form if desired
-    if (isset($node->options['search_form']) && $node->options['search_form'] && $page) {
+    if (isset($node->options['search_form']) && $node->options['search_form'] && $view_mode == 'full') {
       // do not show search form to anonymous users if caching is enabled
       if ($user->uid > 0 || !$GLOBALS['conf']['cache']) {
-        $output .= drupal_get_form('webform_report_search_form', $node);
+        $output .= drupal_render(drupal_get_form('webform_report_search_form', $node));
       }
     }
     
@@ -349,8 +352,9 @@ function _webform_report_get_report_data($node) {
       // Get mapping for select lists (Start)
       if ($col['type'] == 'select') {
         // get component info
-        $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = %d AND c.cid = %d", $node->wnid, $col['cid']);
-        $r = db_fetch_object($result);
+        $result = db_query("SELECT c.extra FROM {webform_component} c WHERE c.nid = :nid AND c.cid = :cid", 
+          array(':nid' => $node->wnid, ':cid' => $col['cid']));
+        $r = $result->fetchObject();
         $extra = unserialize($r->extra);
         // load the webform select component handler
         module_load_include('inc', 'webform', 'components/select');
@@ -400,7 +404,7 @@ function _webform_report_get_report_data($node) {
       while (TRUE) {
         
         // get next submission data
-        $row = db_fetch_object($rs);
+        $row = $rs->fetchObject();
         
         // check for end of data or end of submission
         if (!$row || $row->sid != $csid) {
@@ -1152,9 +1156,11 @@ function _webform_report_page() {
   if (user_access('access webform reports')) {
     $headers = array(t('View'), t('Edit'), t('Delete'));
 
-    $result = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n WHERE n.type='webform_report'"));
-   
-    while ($node = db_fetch_object($result)) {
+    $query = db_select('node', 'n');
+    $query->condition('n.type', 'webform', '=');
+    $query->addTag('node_access');
+    $result = $query->execute();
+    foreach ($result as $node) {
       $rows[] = array(
         l($node->title, 'node/' . $node->nid),
         l(t('edit'), 'node/' . $node->nid . '/edit'),
@@ -1162,7 +1168,7 @@ function _webform_report_page() {
       );
     }
   
-    $output = theme_table($headers, $rows, array('class' => 'webform'));
+    $output = theme('table', array('header' => $headers, 'rows' => $rows, 'attributes' => array('class' => array('webform'))));
   }
   return $output;
 }
@@ -1199,13 +1205,9 @@ function _webform_report_pager($headers, $rows, $node) {
   if (array_key_exists('layout', $node->options)) {
     $layout = $node->options['layout'];
   }
-  
-  // Grab the 'page' query parameter.
-  // Taken from pager_query() in pager.inc
-  $page = isset($_GET['page']) ? $_GET['page'] : '';
-  // Convert comma-separated $page to an array, used by other functions.
-  $pager_page_array = explode(',', $page);
-  if ($page == '') $page = 0;
+
+  // get the current page
+  $page = pager_find_page();
   
   // filter out hidden columns
   $out = array();
@@ -1224,23 +1226,15 @@ function _webform_report_pager($headers, $rows, $node) {
   
   if ($layout == 'REPORT') {
     // format the table with the current page
-    $output = theme_table($headers, $out, array('class' => 'webform_report'));
+    $output = theme('table', array('header' => $headers, 'rows' => $out, 'attributes' => array('class' => array('webform_report'))));
   }
   else {
     $output = webform_report_format_submissions($headers, $out);
   }
     
-  // Put some magic in the two global variables
-  // Based on code in pager_query() in pager.inc
-  $pager_total[0] = count($pages);
-  $pager_page_array[0] =
-    max(0, min(
-      (int)$pager_page_array[0],
-      ((int)$pager_total[0]) - 1)
-    );
-      
   // Add the pager to the output.
-  $output .= theme('pager', NULL, $results_per_page, 0);
+  pager_default_initialize(count($rows), $results_per_page);  
+  $output .= theme('pager');
 
   return $output;
 }
@@ -1281,7 +1275,7 @@ function webform_report_format_submissions($headers, $rows) {
     $out[] = array($output);
   }
 
-  return theme_table(array(), $out, array('class' => 'webform_report webform-report-submission'));
+  return theme('table', array('rows' => $out, 'attributes' => array('class' => array('webform_report webform-report-submission'))));
 }
 
 /**
@@ -1307,7 +1301,7 @@ function webform_report_csv($node) {
  * @return 
  *   an array of form elements
  */
- function webform_report_export_form($form_state, $node) {
+ function webform_report_export_form($form, $form_state, $node) {
   
   $form = array();
 
@@ -1358,8 +1352,7 @@ function webform_report_csv($node) {
   );
   
   $form['return'] = array(
-    '#type' => 'markup',
-    '#value' => l(t('Return to Report'), 'node/'. $node->nid),
+    '#markup' => l(t('Return to Report'), 'node/'. $node->nid),
   );
   
   return $form;
@@ -1402,10 +1395,11 @@ function webform_report_export_form_submit($form_id, $form_state) {
       }
     }
     $fname = 'wfr_export.' . $ftype ;
+
+    drupal_add_http_header('Content-Type',  $ctype);
+    drupal_add_http_header('Content-Length', strlen($output));
+    drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $fname . '"');
     
-    drupal_set_header('Content-Type: ' . $ctype);
-    drupal_set_header('Content-Length: ' . strlen($output));
-    drupal_set_header('Content-Disposition: attachment; filename="' . $fname . '"');
     echo $output;
     die();
   }
