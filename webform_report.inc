@@ -1455,7 +1455,12 @@ function _webform_report_output_csv($headers, $rows, $format = 'text', $delim = 
   foreach ($rows as $row) {
     $tmp = array();
     foreach ($row as $cell) {
-      // output cell if not hidden
+      // if this cell isn't an array, it must be empty so add an empty string
+      // as a placeholder and move on to the next cell
+      if (!is_array($cell)) {
+        $tmp[] = _webform_report_format_csv_column('', $delim);
+        continue;
+      }      // output cell if not hidden
       if (!array_key_exists('hidden', $cell)) {
         // special handling for file types - use entire path
         if (array_key_exists('path', $cell)) {
