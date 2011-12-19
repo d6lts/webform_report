@@ -330,7 +330,7 @@ function webform_report_criteria_form($form, &$form_state, $node) {
     );
     
     // PHP code fieldset - only shown if user has permission
-    if (user_access('use PHP code in webform reports')) {
+    if (user_access('use php code')) {
     
       $code = isset($node->options['php_code']) ? $node->options['php_code'] : '';
       
@@ -933,7 +933,7 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   $node->options['hide_csv'] = $form_state['values']['hide_csv'];
   $node->options['search_form'] = $form_state['values']['search_form'];
   $node->options['layout'] = $form_state['values']['layout'];
-  if (user_access('use PHP code in webform reports') && isset($form_state['values']['php_code'])) {
+  if (user_access('use php code') && isset($form_state['values']['php_code'])) {
     $node->options['php_code'] = $form_state['values']['php_code'];
   }
   
