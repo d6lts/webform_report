@@ -1159,8 +1159,8 @@ function _webform_report_page() {
     $headers = array(t('View'), t('Edit'), t('Delete'));
 
     $query = db_select('node', 'n');
-    $query->condition('n.type', 'webform', '=');
-    $query->addTag('node_access');
+    $query->fields('n');
+    $query->condition('n.type', 'webform_report', '=');
     $result = $query->execute();
     foreach ($result as $node) {
       $rows[] = array(
