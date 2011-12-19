@@ -15,13 +15,15 @@ function _webform_report_get_webforms() {
 
   $webforms = array();
 
-  $query = db_select('node', 'n');
-  $query->fields('n');
-  $query->condition('n.type', 'webform', '=');
-  $query->addTag('node_access');
-  $result = $query->execute();
-  while ($record = $result->fetchObject()) {
-    $webforms[$record->nid] = t($record->title);
+  $webform_types = webform_variable_get('webform_node_types');
+  if ($webform_types) {
+    $result = db_select('node', 'n')
+      ->fields('n')
+      ->condition('n.type', $webform_types, 'IN')
+      ->execute();
+    while ($record = $result->fetchObject()) {
+      $webforms[$record->nid] = t($record->title);
+    }
   }
   
   return $webforms;
