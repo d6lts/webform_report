@@ -1197,9 +1197,12 @@ function _webform_report_pager($headers, $rows, $node) {
   // Break the array into chunks for pagination.
   if ($results_per_page != 0) {
     $pages = array_chunk($rows, $results_per_page, TRUE); 
+    // get the current page
+    $page = pager_find_page();
   }
   else {
     $pages[0] = $rows;
+    $page = 0;
   }
   
   // set report layout
@@ -1208,9 +1211,6 @@ function _webform_report_pager($headers, $rows, $node) {
     $layout = $node->options['layout'];
   }
 
-  // get the current page
-  $page = pager_find_page();
-  
   // filter out hidden columns
   $out = array();
   if (is_array($pages[$page])) {
@@ -1233,10 +1233,12 @@ function _webform_report_pager($headers, $rows, $node) {
   else {
     $output = webform_report_format_submissions($headers, $out);
   }
-    
-  // Add the pager to the output.
-  pager_default_initialize(count($rows), $results_per_page);  
-  $output .= theme('pager');
+
+  // Add the pager to the output if needed
+  if ($results_per_page != 0) {    
+    pager_default_initialize(count($rows), $results_per_page);  
+    $output .= theme('pager');
+  }
 
   return $output;
 }
