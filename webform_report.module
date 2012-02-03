@@ -106,8 +106,8 @@ function webform_report_menu() {
   $items = array();
 
   $items['admin/content/webform_report'] = array(
-    'title' => t('Webform Reports'),
-    'description' => t('View and edit Webform reports.'),
+    'title' => 'Webform Reports',
+    'description' => 'View and edit Webform reports.',
     'page callback' => '_webform_report_page',
     'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
@@ -115,7 +115,7 @@ function webform_report_menu() {
     'type' => MENU_NORMAL_ITEM
   );
   $items['node/%webform_report_menu/edit/webform_report/configuration'] = array(
-    'title' => t('Configuration'),
+    'title' => 'Configuration',
     'page callback' => 'node_page_edit',
     'page arguments' => array(1),
     'access callback' => 'webform_report_access',
@@ -124,7 +124,7 @@ function webform_report_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
   $items['node/%webform_report_menu/edit/webform_report/criteria'] = array(
-    'title' => t('Report Criteria'),
+    'title' => 'Report Criteria',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_report_criteria_form', 1),
     'access callback' => 'webform_report_access',
@@ -134,7 +134,7 @@ function webform_report_menu() {
     'type' => MENU_LOCAL_TASK
   );
   $items['node/%webform_report_menu/csv'] = array(
-    'title' => t('Report CSV Export'),
+    'title' => 'Report CSV Export',
     'page callback' => 'webform_report_csv',
     'page arguments' => array(1),
     'access callback' => 'webform_report_access',
