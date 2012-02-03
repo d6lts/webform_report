@@ -1210,7 +1210,7 @@ function _webform_report_pager($headers, $rows, $node) {
 
   // filter out hidden columns
   $out = array();
-  if (is_array($pages[$page])) {
+  if (count($rows) > 0 && is_array($pages[$page])) {
     foreach ($pages[$page] as $row) {
       $outrow = array();
       foreach ($row as $cell) {
