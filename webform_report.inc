@@ -541,10 +541,9 @@ function _webform_report_test_filters($data, $filters, $columns) {
         $filter_data = strip_tags(strtolower(trim($value['data'])));
         $filter_value = $filter['value'];
         
-        // Do token substitution, if installed - AFTER checking whether the
-        // value might even contain a token (because token_replace is really
-        // resource intensive. Look for presence of TOKEN_PREFIX first.)
-        if (module_exists('token') && strpos($filter_value, TOKEN_PREFIX) !== FALSE) {
+        // Do token substitution - after checking whether the
+        // value might even contain a token
+        if (strpos($filter_value, '[') !== FALSE) {
           // load submitter user and webform node if not done
           if (!isset($submitter)) {
             $submitter = user_load($data['uid']);
@@ -554,10 +553,8 @@ function _webform_report_test_filters($data, $filters, $columns) {
           }
           // replace globals
           $filter_value = token_replace($filter_value);
-          // replace submitter user values
-          $filter_value = token_replace($filter_value, 'user', $submitter);
-          // replace webform node values
-          $filter_value = token_replace($filter_value, 'node', $wfnode);
+          // replace submitter user values and webform node values
+          $filter_value = token_replace($filter_value, array('user' => $submitter, 'node' => $wfnode));
         }
 
         // normalize
