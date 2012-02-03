@@ -312,7 +312,6 @@ function webform_report_update($node) {
   db_update('webform_report')
     ->fields(array(
       'description' => $node->description,
-      'wnid' => $node->wnid,
       'columns' => serialize($node->columns),
       'sorton' => serialize($node->sorton),
       'filters' => serialize($node->filters),
