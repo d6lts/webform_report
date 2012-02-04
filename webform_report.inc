@@ -358,6 +358,10 @@ function _webform_report_get_report_data($node) {
           array(':nid' => $node->wnid, ':cid' => $col['cid']));
         $r = $result->fetchObject();
         $extra = unserialize($r->extra);
+        // add missing key to fix php notice
+        if (!array_key_exists('options_source', $extra)) {
+          $extra['options_source'] = '';
+        }
         // load the webform select component handler
         module_load_include('inc', 'webform', 'components/select');
         // detect webforms 3.x and handle 
