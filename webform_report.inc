@@ -487,6 +487,10 @@ function _webform_report_get_report_data($node) {
     
   }   // end -   if (count($columns) > 0)...
   
+  // Allow report data to be altered by other modules
+  // Other modules must implement a {module}_webform_report_alter(&$report, $node) function
+  drupal_alter('webform_report', $report, $node);
+  
   return $report;
 }
 
