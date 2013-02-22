@@ -71,6 +71,5 @@ function webform_report_uninstall() {
   foreach ($result as $row) {
     node_delete($row);
   }
-  node_type_delete('webform_report');
 }
 
