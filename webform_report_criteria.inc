@@ -131,6 +131,13 @@ function webform_report_criteria_form($form, &$form_state, $node) {
         '#default_value' => $columns[$i]['hidden']
       );
   
+      if ($columns[$i]['type'] != 'date' && $columns[$i]['type'] != 'time') {
+        $form['columns'][$i]['num'] = array(
+          '#type' => 'checkbox',
+          '#default_value' => array_key_exists('num', $columns[$i]) ? $columns[$i]['num'] : FALSE,
+        );
+      }
+      
       webform_report_criteria_form_list_buttons($form, $img_path, 'columns', $cid, $i, $cc);
     }
 
@@ -548,6 +555,7 @@ function theme_webform_report_criteria_form($variables) {
       t('Format'), 
       t('Option'), 
       t('Hidden'),
+      t('Numeric'), 
       array('data' => t('Operations'), 'colspan' => '5')
     );
     
@@ -561,6 +569,7 @@ function theme_webform_report_criteria_form($variables) {
         drupal_render($form['columns'][$index]['format']),
         drupal_render($form['columns'][$index]['option']),
         drupal_render($form['columns'][$index]['hidden']),
+        drupal_render($form['columns'][$index]['num']),
         drupal_render($form['columns'][$index]['delete']),    
         drupal_render($form['columns'][$index]['top']), 
         drupal_render($form['columns'][$index]['up']),
@@ -894,6 +903,9 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
         }
         if (isset($form_state['values']['columns'][$index]['hidden'])) {
           $node->columns[$index]['hidden'] = $form_state['values']['columns'][$index]['hidden'];
+        }
+        if (isset($form_state['values']['columns'][$index]['num'])) {
+          $node->columns[$index]['num'] = $form_state['values']['columns'][$index]['num'];
         }
       }
     }
