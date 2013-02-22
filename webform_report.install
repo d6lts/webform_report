@@ -63,10 +63,13 @@ function webform_report_uninstall() {
   variable_del("webform_report");
 
   // delete all webform reports
-  $result = db_query("SELECT nid FROM {node} WHERE type = 'webform_report'");
-
-  while ($webform_report_node = db_fetch_object($result)) {
-    node_delete($webform_report_node->nid);
+  $result = db_select('node', 'n')
+              ->fields('n', array('nid'))
+              ->condition('type', 'webform_report')
+              ->execute()
+              ->fetchCol();
+  foreach ($result as $row) {
+    node_delete($row);
   }
   node_type_delete('webform_report');
 }
