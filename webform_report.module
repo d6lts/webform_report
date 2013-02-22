@@ -56,7 +56,7 @@ function webform_report_permission() {
  */
 function webform_report_node_access($node, $op, $account) {
 
-  global $user;
+  $result = NODE_ACCESS_IGNORE;
   
   // get node values
   if (is_string($node)) {
@@ -72,49 +72,37 @@ function webform_report_node_access($node, $op, $account) {
   
   // if a webform_report content type is requested
   if ($node_type == 'webform_report'){
-  
+    $result = NODE_ACCESS_DENY;
     switch ($op) {
       case 'view':
         // if node is published, return view access
         if ($node_status) {
-          if (user_access('access webform reports')) {
-            return NODE_ACCESS_ALLOW;
-          }
-          else {
-            return NODE_ACCESS_DENY;
+          if (user_access('access webform reports', $account)) {
+            $result = NODE_ACCESS_ALLOW;
           }
         }
         // if unpublished, return update access - users who can update the node should be able to view it
         else  {
-          if (node_access('update', $node)) {
-            return NODE_ACCESS_ALLOW;
-          }
-          else {
-            return NODE_ACCESS_DENY;
+          if (node_access('update', $node, $account)) {
+            $result = NODE_ACCESS_ALLOW;
           }
         }
         break;
       case 'create':
-        if (user_access('create webform reports')) {
-            return NODE_ACCESS_ALLOW;
-          }
-          else {
-            return NODE_ACCESS_DENY;
+        if (user_access('create webform reports', $account)) {
+            $result = NODE_ACCESS_ALLOW;
           }
         break;
       case 'update':
       case 'delete':
-        if (user_access('edit webform reports') || (user_access('edit own webform reports') && ($user->uid == $node_uid))) {
-          return NODE_ACCESS_ALLOW;
-        }
-        else {
-          return NODE_ACCESS_DENY;
+        if (user_access('edit webform reports', $account) || (user_access('edit own webform reports', $account) && ($account->uid == $node_uid))) {
+          $result = NODE_ACCESS_ALLOW;
         }
         break;
      }
   } 
   
-  return NODE_ACCESS_IGNORE;
+  return $result;
 } 
 
 /**
