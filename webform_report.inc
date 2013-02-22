@@ -1404,6 +1404,8 @@ function webform_report_export_form_submit($form_id, $form_state) {
     drupal_add_http_header('Content-Type',  $ctype);
     drupal_add_http_header('Content-Length', strlen($output));
     drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $fname . '"');
+    // Allow Internet Explorer to download Excel files over HTTPS
+    drupal_add_http_header('Cache-Control: private, must-revalidate');   
     
     echo $output;
     die();
