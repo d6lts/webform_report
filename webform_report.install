@@ -44,7 +44,6 @@ function webform_report_uninstall() {
   while ($webform_report_node = db_fetch_object($result)) {
     node_delete($webform_report_node->nid);
   }
-  node_type_delete('webform_report');
 }
 
 /**
