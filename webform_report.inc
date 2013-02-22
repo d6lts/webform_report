@@ -855,14 +855,14 @@ function _webform_report_format_data($raw, $column) {
     $path = '';
     $text = '';
      
-    // new file handling in webforms 6.x-3.x - data is an id
+    // new file handling in webforms 7.x-3.x - data is an id
     if (is_numeric($raw[0])) {
       // must load the webform file component handler
       module_load_include('inc', 'webform', 'components/file');
       $file = webform_get_file($raw[0]);
       if (!empty($file->fid)) {
-        $text = webform_file_name($file->filepath);
-        $path = webform_file_url($file->filepath);
+        $text = webform_file_name(check_plain(webform_file_name($file->uri)));
+        $path = webform_file_url($file->uri);        
         $link = '<a href="' . $path . '">' . 
                 $text . '</a>' . 
                 ' (' . (int) ($file->filesize/1024) . ' KB)';
