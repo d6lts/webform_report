@@ -88,6 +88,7 @@ function _webform_report_get_columns($node, $components) {
           'cid' => $node->columns[$i]['cid'],
           'hidden' => isset($node->columns[$i]['hidden']) ? $node->columns[$i]['hidden'] : FALSE,
           'num' => isset($node->columns[$i]['num']) ? $node->columns[$i]['num'] : FALSE,
+          'weight' => isset($node->columns[$i]['weight']) ? $node->columns[$i]['weight'] : 0,
         );
       }
     }
@@ -120,6 +121,7 @@ function _webform_report_get_filters($node, $components) {
           'ftype' => $node->filters[$i]['type'],
           'value' => $node->filters[$i]['value'],
           'cid' => $node->filters[$i]['field'],
+          'weight' => isset($node->filters[$i]['weight']) ? $node->filters[$i]['weight'] : 0,
         );
       }
     }
@@ -218,6 +220,7 @@ function _webform_report_get_sorton($node, $components) {
           'type' => $components[$cid]['type'],
           'order' => $node->sorton[$i]['order'],
           'cid' => $node->sorton[$i]['cid'],
+          'weight' => isset($node->filters[$i]['weight']) ? $node->filters[$i]['weight'] : 0,
         );
       }
     }
@@ -474,7 +477,6 @@ function _webform_report_get_report_data($node) {
         }
         
       }   // end - while (TRUE)...
-      
       // see if any rows are available
       if (count($rows) > 0) {
 
@@ -515,7 +517,7 @@ function _webform_report_test_filters($data, $filters, $columns) {
 
   // filter result, return true if no filters
   $ok = TRUE;
-
+  
   // if any filters
   if (count($filters) > 0) {
   
@@ -770,28 +772,34 @@ function _webform_report_test_filters($data, $filters, $columns) {
             break;
           }   // end - switch($filter['type'])...
           
-        }   // end - if (array_key_exists($filter['cid'], $data)...
-        
-        // if hit on search, quit - search filters are last,
-        // so any report filters have already been applied
-        if ($hit) {
-          break;
+      }   // end - if (array_key_exists($filter['cid'], $data)...
+      // data does not exist and not filtered
+      else {
+        if ($filter['ftype'] == 0) {
+          // pass it
+          $ok = TRUE;
         }
+      }
         
-        // if last filter was search, keep going
-        if ($filter['ftype'] == -1) {
-          continue;
-        }
+      // if hit on search, quit - search filters are last,
+      // so any report filters have already been applied
+      if ($hit) {
+        break;
+      }
         
-        // if filter did not pass, don't check any further
-        if (!$ok) {
-          break;
-        }
+      // if last filter was search, keep going
+      if ($filter['ftype'] == -1) {
+        continue;
+      }
+        
+      // if filter did not pass, don't check any further
+      if (!$ok) {
+        break;
+      }
       
-      }   // end - foreach($filters as $index => $filter)...
+    }   // end - foreach($filters as $index => $filter)...
       
-    }   // end - if (count($filters) > 0)...
-  
+  }   // end - if (count($filters) > 0)...
   // return filter result
   return $ok;
 }
@@ -1240,6 +1248,10 @@ function _webform_report_pager($headers, $rows, $node) {
       foreach ($row as $cell) {
         $hide = isset($cell['hidden']) ? $cell['hidden'] : FALSE;
         if (!$hide) {
+          // remove cell attributes
+          unset($cell['hidden']);
+          unset($cell['sort']);
+          unset($cell['field']);
           $outrow[] = $cell;
         }
       }
@@ -1425,7 +1437,7 @@ function webform_report_export_form_submit($form_id, $form_state) {
     drupal_add_http_header('Content-Length', strlen($output));
     drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $fname . '"');
     // Allow Internet Explorer to download Excel files over HTTPS
-    drupal_add_http_header('Cache-Control: private, must-revalidate');   
+    drupal_add_http_header('Cache-Control', 'private, must-revalidate');   
     
     echo $output;
     die();
