@@ -809,7 +809,7 @@ function _webform_report_test_filters($data, $filters, $columns) {
     else {
     
       // no data, add dummy data
-      $row[] = array('data' => '', 'field' => $col['cid']);
+      $row[] = array('data' => '', 'field' => $col['cid'], 'hidden' => $col['hidden']);
     }
   }
   
@@ -1466,8 +1466,9 @@ function _webform_report_output_csv($headers, $rows, $format = 'text', $delim = 
       if (!is_array($cell)) {
         $tmp[] = _webform_report_format_csv_column('', $delim);
         continue;
-      }      // output cell if not hidden
-      if (!array_key_exists('hidden', $cell)) {
+      }      
+      // output cell if not hidden
+      if (!array_key_exists('hidden', $cell) || $cell['hidden'] == FALSE) {
         // special handling for file types - use entire path
         if (array_key_exists('path', $cell)) {
           $data = $cell['path'];
