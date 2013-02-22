@@ -64,7 +64,6 @@ function _webform_report_get_components($nid) {
  *   an associative array of webform report columns
  */
 function _webform_report_get_columns($node, $components) {
-
   // build list of columns on the report
   $columns = array();
   if (is_array($node->columns)) {
@@ -78,11 +77,11 @@ function _webform_report_get_columns($node, $components) {
           'option' => isset($node->columns[$i]['option']) ? $node->columns[$i]['option'] : '',
           'cid' => $node->columns[$i]['cid'],
           'hidden' => isset($node->columns[$i]['hidden']) ? $node->columns[$i]['hidden'] : FALSE,
+          'num' => isset($node->columns[$i]['num']) ? $node->columns[$i]['num'] : FALSE,
         );
       }
     }
   }
-  
   return $columns;
 }
 
@@ -638,6 +637,18 @@ function _webform_report_test_filters($data, $filters, $columns) {
           }
         }
         
+        // convert to numeric if flagged and a non-string comparison
+        if ($col['num'] && $cmpflag) {
+          $filter_data = $filter_data + 0;
+          if ($filter['ftype'] == 13) {
+            $filter_value[0] = $filter_value[0] + 0;
+            $filter_value[1] = $filter_value[1] + 0;
+          }
+          else {
+            $filter_value = $filter_value + 0;
+          }
+        }
+        
         // apply filter
         switch ($filter['ftype']) {
     
@@ -809,7 +820,7 @@ function _webform_report_test_filters($data, $filters, $columns) {
     else {
     
       // no data, add dummy data
-      $row[] = array('data' => '', 'field' => $col['cid'], 'hidden' => $col['hidden']);
+      $row[] = array('data' => '', 'field' => $col['cid'], 'hidden' => $col['hidden'], 'sort' => '');
     }
   }
   
@@ -1048,7 +1059,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
               }
             }
             // add the sort function
-            $a[] = _webform_report_sort_column($index, ($sort['order'] == SORT_DESC), $sort['type']);
+            $a[] = _webform_report_sort_column($index, ($sort['order'] == SORT_DESC), $sort['type'], $col['num']);
             break;
           }
         }
@@ -1103,7 +1114,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
     // find column to be sorted
     foreach ($columns as $index => $col) {
       if ($col['cid'] == $ts['sql']) {
-        $code = 'return ' . _webform_report_sort_column($index, ($ts_order == 'desc'), $col['type']) . ';';
+        $code = 'return ' . _webform_report_sort_column($index, ($ts_order == 'desc'), $col['type'], $col['num']) . ';';
         break;
       }
     }
@@ -1124,7 +1135,7 @@ function _webform_report_sort(&$headers, &$rows, $sorton, $columns) {
  * @return 
  *   the sort function for the given column
  */
-function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
+function _webform_report_sort_column($index, $desc = FALSE, $type = '', $num = FALSE) {
 
   // create comparison based on type
   // for dates and times compare timestamps
@@ -1133,7 +1144,12 @@ function _webform_report_sort_column($index, $desc = FALSE, $type = '') {
   }
   // for all other types, handle as string
   else {
-    $code = "strcasecmp(\$a[$index]['sort'],\$b[$index]['sort'])";
+    if ($num) {
+      $code = "((\$a[$index]['sort']+0)-(\$b[$index]['sort']+0))";
+    }
+    else {
+      $code = "strcasecmp(\$a[$index]['sort'],\$b[$index]['sort'])";
+    }
   }
   // invert output for descending sort
   if ($desc) {
