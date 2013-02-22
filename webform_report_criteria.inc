@@ -140,7 +140,20 @@ function webform_report_criteria_form($form_state, $node) {
         );
       }
       
-      webform_report_criteria_form_list_buttons($form, $img_path, 'columns', $cid, $i, $cc);
+      $form['columns'][$i]['weight'] = array(
+        '#type' => 'weight',
+        '#default_value' => $columns[$i]['weight'],
+        '#delta' => 10,
+        '#attributes' => array('class' => 'webform-report-columns-item-weight'),
+      );
+  
+      $form['columns'][$i]['delete'] = array(
+        '#type' => 'image_button',
+        '#src' => $img_path . 'trash.png',
+        '#return_value' => 'columns_delete_' . $i . '_' . $cid,
+        '#attributes' => array('alt' => t('Delete this item')),
+        '#submit' => array('webform_report_criteria_form_list_submit')
+      );
     }
 
     $form['columns']['addcomp'] = array(
@@ -209,7 +222,20 @@ function webform_report_criteria_form($form_state, $node) {
       // insert value field(s)      
       webform_report_criteria_filter_value_field($form, $i, $type, $ftype, $value);
       
-      webform_report_criteria_form_list_buttons($form, $img_path, 'filters', $cid, $i, $cc);
+      $form['filters'][$i]['weight'] = array(
+        '#type' => 'weight',
+        '#default_value' => $columns[$i]['weight'],
+        '#delta' => 10,
+        '#attributes' => array('class' => 'webform-report-filters-item-weight'),
+      );
+  
+      $form['filters'][$i]['delete'] = array(
+        '#type' => 'image_button',
+        '#src' => $img_path . 'trash.png',
+        '#return_value' => 'filters_delete_' . $i . '_' . $cid,
+        '#attributes' => array('alt' => t('Delete this item')),
+        '#submit' => array('webform_report_criteria_form_list_submit')
+      );
     }
     
     $form['filters']['addcomp'] = array(
@@ -263,7 +289,20 @@ function webform_report_criteria_form($form_state, $node) {
         '#default_value' => $sorton[$i]['order']
       );
   
-      webform_report_criteria_form_list_buttons($form, $img_path, 'sorton', $cid, $i, $cc);
+      $form['sorton'][$i]['weight'] = array(
+        '#type' => 'weight',
+        '#default_value' => $columns[$i]['weight'],
+        '#delta' => 10,
+        '#attributes' => array('class' => 'webform-report-sorton-item-weight'),
+      );
+  
+      $form['sorton'][$i]['delete'] = array(
+        '#type' => 'image_button',
+        '#src' => $img_path . 'trash.png',
+        '#return_value' => 'sorton_delete_' . $i . '_' . $cid,
+        '#attributes' => array('alt' => t('Delete this item')),
+        '#submit' => array('webform_report_criteria_form_list_submit')
+      );
     }
     
     $form['sorton']['addcomp'] = array(
@@ -466,82 +505,6 @@ function webform_report_criteria_filter_value_field(&$form, $index, $type, $ftyp
 }        
 
 /**
- * Add list buttons to a form
- *
- * @param form
- *   the form to add the components
- * *param img_path
- *   path to button image files
- * *param list
- *   the list name
- * *param cid
- *   the current item cid
- * *param index
- *   the current item index
- * *param count
- *   the number of items in the list
- */
-function webform_report_criteria_form_list_buttons(&$form, $img_path, $list, $cid, $index, $count) {
-
-  $form[$list][$index]['delete'] = array(
-    '#type' => 'image_button',
-    '#src' => $img_path . 'trash.png',
-    '#return_value' => $list . '_delete_' . $index . '_' . $cid,
-    '#attributes' => array('alt' => t('Delete this item')),
-    '#submit' => array('webform_report_criteria_form_list_submit')
-  );
-  
-  if ($index > 0) {
-    $form[$list][$index]['top'] = array(
-      '#type' => 'image_button',
-      '#src' => $img_path . 'toparrow.png',
-      '#return_value' => $list . '_top_' . $index . '_' . $cid,
-      '#attributes' => array('alt' => t('Move item to the top')),
-      '#submit' => array('webform_report_criteria_form_list_submit')
-    );
-    $form[$list][$index]['up'] = array(
-      '#type' => 'image_button',
-      '#src' => $img_path . 'uparrow.png',
-      '#return_value' => $list . '_up_' . $index . '_' . $cid,
-      '#attributes' => array('alt' => t('Move item up')),
-      '#submit' => array('webform_report_criteria_form_list_submit')
-    );
-  }
-  else {
-    $form[$list][$index]['top'] = array(
-      '#type' => 'markup'
-    );
-    $form[$list][$index]['up'] = array(
-      '#type' => 'markup'
-    );
-  }
-  if ($index < $count-1) {
-    $form[$list][$index]['down'] = array(
-      '#type' => 'image_button',
-      '#src' => $img_path . 'downarrow.png',
-      '#return_value' => $list . '_down_' . $index . '_' . $cid,
-      '#attributes' => array('alt' => t('Move item down')),
-      '#submit' => array('webform_report_criteria_form_list_submit')
-    );
-    $form[$list][$index]['end'] = array(
-      '#type' => 'image_button',
-      '#src' => $img_path . 'endarrow.png',
-      '#return_value' => $list . '_end_' . $index . '_' . $cid,
-      '#attributes' => array('alt' => t('Move item to the end')),
-      '#submit' => array('webform_report_criteria_form_list_submit')
-    );
-  }
-  else {
-    $form[$list][$index]['down'] = array(
-      '#type' => 'markup'
-    );
-    $form[$list][$index]['end'] = array(
-      '#type' => 'markup'
-    );
-  }
-}
-
-/**
  * Theme the report criteria form
  *
  * @param form
@@ -561,32 +524,35 @@ function theme_webform_report_criteria_form($form) {
       t('Option'), 
       t('Hidden'),
       t('Numeric'),
-      array('data' => t('Operations'), 'colspan' => '5')
+      t('Weight'),
+      array('data' => t('Operations'), 'colspan' => '1')
     );
     
     $rows = array();
     
     foreach (element_children($form['columns']) as $index) {
-  
-      $rows[] = array(
-        drupal_render($form['columns'][$index]['name']),
-        drupal_render($form['columns'][$index]['type']),
-        drupal_render($form['columns'][$index]['format']),
-        drupal_render($form['columns'][$index]['option']),
-        drupal_render($form['columns'][$index]['hidden']),
-        drupal_render($form['columns'][$index]['num']),
-        drupal_render($form['columns'][$index]['delete']),    
-        drupal_render($form['columns'][$index]['top']), 
-        drupal_render($form['columns'][$index]['up']),
-        drupal_render($form['columns'][$index]['down']),
-        drupal_render($form['columns'][$index]['end'])    
-      );
+      if (is_numeric($index)) {
+        $rows[] = array(
+          'data' => array(
+            drupal_render($form['columns'][$index]['name']),
+            drupal_render($form['columns'][$index]['type']),
+            drupal_render($form['columns'][$index]['format']),
+            drupal_render($form['columns'][$index]['option']),
+            drupal_render($form['columns'][$index]['hidden']),
+            drupal_render($form['columns'][$index]['num']),
+            drupal_render($form['columns'][$index]['weight']),
+            drupal_render($form['columns'][$index]['delete'])),    
+          'class' => 'draggable',
+        );
+      }
     }
   
+    $tableid = 'webform-report-columns-table';
     $form['columns']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('id' => $tableid))
     );
-  
+    drupal_add_tabledrag($tableid, 'order', 'sibling', 'webform-report-columns-item-weight');
+    
     $header = array(
       array('data' => t('Add Column'), 'colspan' => '2')
     );
@@ -616,29 +582,32 @@ function theme_webform_report_criteria_form($form) {
     $rows = array();
     foreach (element_children($form['filters']) as $index) {
   
-      $row = array();
-      $row[] = drupal_render($form['filters'][$index]['name']);
-      $row[] = drupal_render($form['filters'][$index]['type']);
-      $row[] = drupal_render($form['filters'][$index]['ftype']);
-      if (array_key_exists('value1', $form['filters'][$index])) {
-         $row[] = drupal_render($form['filters'][$index]['value1']);
-         $row[] = drupal_render($form['filters'][$index]['value2']);
-      }
-      else {
-        if ($hasextra) {
-          $row[] = array('data' => drupal_render($form['filters'][$index]['value']), 'colspan' => '2');
+      if (is_numeric($index)) {
+        $row = array();
+        $row[] = drupal_render($form['filters'][$index]['name']);
+        $row[] = drupal_render($form['filters'][$index]['type']);
+        $row[] = drupal_render($form['filters'][$index]['ftype']);
+        if (array_key_exists('value1', $form['filters'][$index])) {
+           $row[] = drupal_render($form['filters'][$index]['value1']);
+           $row[] = drupal_render($form['filters'][$index]['value2']);
         }
         else {
-          $row[] = drupal_render($form['filters'][$index]['value']);
+          if ($hasextra) {
+            $row[] = array('data' => drupal_render($form['filters'][$index]['value']), 'colspan' => '2');
+          }
+          else {
+            $row[] = drupal_render($form['filters'][$index]['value']);
+          }
         }
-      }
-      $row[] = drupal_render($form['filters'][$index]['delete']);
-      $row[] = drupal_render($form['filters'][$index]['top']);
-      $row[] = drupal_render($form['filters'][$index]['up']);
-      $row[] = drupal_render($form['filters'][$index]['down']);
-      $row[] = drupal_render($form['filters'][$index]['end']);  
       
-      $rows[] = $row;
+        $row[] = drupal_render($form['filters'][$index]['weight']);
+        $row[] = drupal_render($form['filters'][$index]['delete']);
+        
+        $rows[] = array(
+          'data' => $row,
+          'class' => 'draggable',
+        );
+      }
     }
 
     $header = array();
@@ -651,11 +620,14 @@ function theme_webform_report_criteria_form($form) {
     else {
       $header[] = t('Filter Value');
     }
-    $header[] = array('data' => t('Operations'), 'colspan' => '5');
+    $header[] = t('Weight');
+    $header[] = array('data' => t('Operations'), 'colspan' => '1');
     
+    $tableid = 'webform-report-filters-table';
     $form['filters']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('id' => $tableid))
     );
+    drupal_add_tabledrag($tableid, 'order', 'sibling', 'webform-report-filters-item-weight');
   
     $header = array(
       array('data' => t('Add Filter'), 'colspan' => '2')
@@ -679,28 +651,31 @@ function theme_webform_report_criteria_form($form) {
       t('Name'), 
       t('Type'), 
       t('Order'), 
-      array('data' => t('Operations'), 'colspan' => '5')
+      t('Weight'), 
+      array('data' => t('Operations'), 'colspan' => '1')
     );
     
     $rows = array();
     
     foreach (element_children($form['sorton']) as $index) {
-  
-      $rows[] = array(
-        drupal_render($form['sorton'][$index]['name']),
-        drupal_render($form['sorton'][$index]['type']),
-        drupal_render($form['sorton'][$index]['order']),
-        drupal_render($form['sorton'][$index]['delete']),    
-        drupal_render($form['sorton'][$index]['top']), 
-        drupal_render($form['sorton'][$index]['up']),
-        drupal_render($form['sorton'][$index]['down']),
-        drupal_render($form['sorton'][$index]['end'])    
-      );
+      if (is_numeric($index)) {
+        $rows[] = array(
+          'data' => array(
+            drupal_render($form['sorton'][$index]['name']),
+            drupal_render($form['sorton'][$index]['type']),
+            drupal_render($form['sorton'][$index]['order']),
+            drupal_render($form['sorton'][$index]['weight']),
+            drupal_render($form['sorton'][$index]['delete'])),    
+          'class' => 'draggable',
+        );
+      }
     }
   
+    $tableid = 'webform-report-sorton-table';
     $form['sorton']['table'] = array(
-      '#value' => theme('table', $header, $rows)
+      '#value' => theme('table', $header, $rows, array('id' => $tableid))
     );
+    drupal_add_tabledrag($tableid, 'order', 'sibling', 'webform-report-sorton-item-weight');
   
     $header = array(
       array('data' => t('Add Sort'), 'colspan' => '2')
@@ -812,71 +787,6 @@ function webform_report_criteria_form_list_submit($form_id, $form_state) {
     }
   }
   
-  else {
-    
-    if ($list == 'columns') {
-      $clist = $node->columns;
-    }
-    elseif ($list == 'sorton') {
-      $clist = $node->sorton;
-    }
-    elseif ($list == 'filters') {
-      $clist = $node->filters;
-    }
-    
-    if ($op == 'top' && $cid != 0) {
-      if ($index > 0) {
-        for ($i = $index; $i > 0; $i--) {
-          $tmp = $clist[$i];
-          $clist[$i] = $clist[$i-1];
-          $clist[$i-1] = $tmp;
-        }
-        $upd = TRUE;
-      }
-    }
-  
-    elseif ($op == 'up' && $cid != 0) {
-      if ($index > 0) {
-          $tmp = $clist[$index];
-          $clist[$index] = $clist[$index-1];
-          $clist[$index-1] = $tmp;
-      }
-      $upd = TRUE;
-    }
-  
-    elseif ($op == 'down' && $cid != 0) {
-      if ($index >= 0 && $index < count($clist)) {
-          $tmp = $clist[$index];
-          $clist[$index] = $clist[$index+1];
-          $clist[$index+1] = $tmp;
-      }
-      $upd = TRUE;
-    }
-  
-    elseif ($op == 'end' && $cid != 0) {
-      if ($index >= 0 && $index < count($clist)) {
-        for ($i = $index; $i < count($clist) - 1; $i++) {
-          $tmp = $clist[$i];
-          $clist[$i] = $clist[$i+1];
-          $clist[$i+1] = $tmp;
-        }
-        $upd = TRUE;
-      }
-    }
-    
-    if ($upd) {
-      if ($list == 'columns') {
-        $node->columns = $clist;
-      }
-      elseif ($list == 'sorton') {
-        $node->sorton = $clist;
-      }
-      elseif ($list == 'filters') {
-        $node->filters = $clist;
-      }
-    }
-  }
-
   // update the node  
   if ($upd) {
     node_save($node);
@@ -913,9 +823,14 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
         if (isset($form_state['values']['columns'][$index]['num'])) {
           $node->columns[$index]['num'] = $form_state['values']['columns'][$index]['num'];
         }
+        if (isset($form_state['values']['columns'][$index]['weight'])) {
+          $node->columns[$index]['weight'] = $form_state['values']['columns'][$index]['weight'];
+        }
       }
     }
   }
+  usort($node->columns, 'sort_by_weight_cmp');
+  
   foreach (element_children($form_state['values']['filters']) as $index) {
     if (is_numeric($index)) {
       if (array_key_exists($index, $node->filters)) {
@@ -933,17 +848,25 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
           $value = $form_state['values']['filters'][$index]['value'];
         }
         $node->filters[$index]['value'] = $value;
+        if (isset($form_state['values']['filters'][$index]['weight'])) {
+          $node->filters[$index]['weight'] = $form_state['values']['filters'][$index]['weight'];
+        }
       }
     }
   }
+  usort($node->filters, 'sort_by_weight_cmp');
 
   foreach (element_children($form_state['values']['sorton']) as $index) {
     if (is_numeric($index)) {
       if (array_key_exists($index, $node->sorton)) {
         $node->sorton[$index]['order'] = $form_state['values']['sorton'][$index]['order'];
       }
+      if (isset($form_state['values']['sorton'][$index]['weight'])) {
+        $node->sorton[$index]['weight'] = $form_state['values']['sorton'][$index]['weight'];
+      }
     }
   }
+  usort($node->sorton, 'sort_by_weight_cmp');
 
   // update options
   $node->options['results_per_page'] = $form_state['values']['results_per_page'];
@@ -958,6 +881,13 @@ function webform_report_criteria_form_submit($form_id, $form_state) {
   node_save($node);
 
   drupal_set_message(t('Webform Report has been updated.'));
+}
+
+/**
+ * Sort cmp function to sort arrays by weight
+ */
+function sort_by_weight_cmp($a, $b) {
+    return $a['weight'] - $b['weight'];
 }
 
 /**
