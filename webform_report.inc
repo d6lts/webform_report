@@ -1246,9 +1246,11 @@ function _webform_report_pager($headers, $rows, $node) {
         $hide = isset($cell['hidden']) ? $cell['hidden'] : FALSE;
         if (!$hide) {
           // remove cell attributes
-          unset($cell['hidden']);
-          unset($cell['sort']);
-          unset($cell['field']);
+          if (is_array($cell)) {
+            unset($cell['hidden']);
+            unset($cell['sort']);
+            unset($cell['field']);
+          }
           $outrow[] = $cell;
         }
       }
