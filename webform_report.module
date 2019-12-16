@@ -214,14 +214,17 @@ function webform_report_view($node, $teaser = FALSE, $page = FALSE) {
   if (!empty($node->nid) && empty($node->wnid) && (arg(2) != 'add' && arg(2) != 'edit')) {
     drupal_goto('node/' . $node->nid . '/add/webform_report/criteria');
   }
-  module_load_include('inc', 'webform_report', 'webform_report');
-  // include search form
-  module_load_include('inc', 'webform_report', 'webform_report_criteria');
-  
-  $output = _webform_report_get_body_content($node, $teaser, $page);
-  
-  $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
-  $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
+
+  if (user_access('access webform reports')) {
+    module_load_include('inc', 'webform_report', 'webform_report');
+    // include search form
+    module_load_include('inc', 'webform_report', 'webform_report_criteria');
+
+    $output = _webform_report_get_body_content($node, $teaser, $page);
+
+    $node->content['body'] = array('#value' => check_markup($node->body, $node->format, FALSE));
+    $node->content['webform_report'] = array('#value' => $output, '#weight' => 10);
+  }
   
   return $node;
 }
